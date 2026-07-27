@@ -1,0 +1,102 @@
+# ============================================
+# AI Rescue USB - .gitignore
+# ============================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.env
+.venv
+env.bak/
+venv.bak/
+
+# Logs
+*.log
+logs/
+/var/log/ai-rescue*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build outputs
+build/
+dist/
+*.iso
+*.img
+build/
+
+# Herpes/Hermes (sessions locales)
+hermes-cache/
+.hermes/
+.cache/
+
+# Données locales / runtime
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets (par sécurité)
+.env
+.env.local
+.env.production
+*.key
+*.pem
+id_rsa
+id_ed25519
+*.secret
+
+# OS fichiers
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Cache
+.cache/
+*.cache
+tmp/
+temp/
+
+# Tests
+.coverage
+htmlcov/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+
+# QEMU / VM temporaires
+*.qcow2
+*.qcow2.*
+*.vdi
+*.vmdk
+*.vhd
+
+# Documentation générée
+docs/_build/
+site/
+.public/
+
+# Dependencies non versionnées
+node_modules/
+*.lock
+
+# Fichiers temporaires et locaux
+README_OLD.md
+hermes-verify-*.py
+ai-rescue
+

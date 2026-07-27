@@ -1,0 +1,35 @@
+#!/sbin/openrc-run
+# ============================================================
+# AI Rescue USB - Service
+# ============================================================
+# Service OpenRC qui démarre automatiquement AI Rescue au boot.
+
+description="AI Rescue USB - Universal Computer Technician"
+command="/opt/ai-rescue/ai-rescue"
+command_args="talk"
+command_background=true
+pidfile="/var/run/ai-rescue.pid"
+
+depend() {
+    need localmount network
+    after bootmisc
+}
+
+start_pre() {
+    checkpath --directory --owner root:root --mode 0755 /var/log/ai-rescue
+    checkpath --file --owner root:root --mode 0644 /var/log/ai-rescue.log
+}
+
+start() {
+    ebegin "Starting AI Rescue USB"
+    start-stop-daemon --start --background --make-pidfile \
+        --pidfile "${pidfile}" \
+        --exec /usr/bin/python3 -- /opt/ai-rescue/ui/server.py
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping AI Rescue USB"
+    start-stop-daemon --stop --pidfile "${pidfile}" --retry 5
+    eend $?
+}

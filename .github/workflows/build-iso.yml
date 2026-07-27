@@ -1,0 +1,129 @@
+# ============================================================
+# AI Rescue USB - GitHub Actions CI/CD
+# ============================================================
+# Auto-builds the ISO on every push to main and creates a
+# GitHub Release with the ISO + SHA256 checksum.
+# ============================================================
+
+name: Build ISO
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ISO in Docker
+        run: |
+          mkdir -p output
+          docker build -t ai-rescue-builder .
+          docker run --privileged \
+            -v "$(pwd)/output:/output" \
+            ai-rescue-builder
+
+      - name: Verify ISO exists
+        run: |
+          ls -lh output/
+          test -f output/ai-rescue-usb-1.0.0-x86_64.iso || (echo "ISO NOT FOUND!" && exit 1)
+          echo "ISO_SIZE=$(du -b output/ai-rescue-usb-1.0.0-x86_64.iso | cut -f1)" >> $GITHUB_ENV
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-rescue-usb-iso
+          path: |
+            output/ai-rescue-usb-1.0.0-x86_64.iso
+            output/ai-rescue-usb-1.0.0-x86_64.iso.sha256
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AI Rescue USB ${{ github.ref_name }}"
+          body: |
+            ## 🤖 AI Rescue USB ${{ github.ref_name }}
+
+            Le technicien informatique universel dans une clé USB.
+
+            ### 📥 Téléchargement
+            - **ISO** : `ai-rescue-usb-1.0.0-x86_64.iso`
+            - **SHA256** : voir fichier `.sha256` joint
+
+            ### 📀 Instructions
+            1. Télécharge l'ISO
+            2. Flashe sur une clé USB (8 Go+) avec [Rufus](https://rufus.ie) (Windows) ou `dd` (Mac/Linux)
+            3. Branche la clé, démarre dessus, parle à l'IA
+
+            ### 🆕 Changements
+            - Version initiale
+            - AI Core avec LLM local + fallback
+            - Détection matériel automatique
+            - Réparation Windows / Linux / BSD
+            - Installation OS (9 systèmes supportés)
+            - Sauvegarde / Restauration
+            - Récupération fichiers
+            - Interface web + commande vocale
+
+            [📖 Instructions complètes](https://github.com/${{ github.repository }}#readme)
+          files: |
+            output/ai-rescue-usb-1.0.0-x86_64.iso
+            output/ai-rescue-usb-1.0.0-x86_64.iso.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  # Deploy website to GitHub Pages
+  deploy-website:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Copy website
+        run: |
+          mkdir -p _site
+          cp -r website/* _site/
+          # Add download link to latest release
+          echo "" >> _site/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

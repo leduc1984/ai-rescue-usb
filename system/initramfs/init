@@ -1,0 +1,273 @@
+#!/bin/sh
+# ============================================================
+# AI Rescue USB - Init Script
+# ============================================================
+# Premier script exécuté au démarrage.
+# Configure le système minimal, lance les services et l'UI.
+# ============================================================
+
+# Monter les pseudo-filesystems
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+mount -t devtmpfs dev /dev
+mount -t tmpfs tmpfs /tmp
+mount -t tmpfs tmpfs /run
+
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts
+
+# Logger
+log() {
+    echo "[AI-RESCUE] $*"
+    echo "[AI-RESCUE] $*" >> /var/log/ai-rescue-boot.log
+}
+
+log "============================================"
+log " AI Rescue USB - Starting..."
+log "============================================"
+
+# ============================================================
+# Étape 1: Détection du mode de boot
+# ============================================================
+detect_boot_mode() {
+    if [ -d /sys/firmware/efi ]; then
+        log "Boot mode: UEFI"
+        BOOT_MODE="uefi"
+    else
+        log "Boot mode: Legacy BIOS"
+        BOOT_MODE="legacy"
+    fi
+
+    # Paramètres kernel
+    CMDLINE=$(cat /proc/cmdline 2>/dev/null || echo "")
+
+    if echo "$CMDLINE" | grep -q "ai_rescue.ram_mode=1"; then
+        RAM_MODE=true
+        log "Mode RAM activé"
+    else
+        RAM_MODE=false
+    fi
+
+    if echo "$CMDLINE" | grep -q "ai_rescue.persistence=1"; then
+        PERSISTENCE=true
+        log "Persistance activée"
+    else
+        PERSISTENCE=false
+    fi
+
+    if echo "$CMDLINE" | grep -q "ai_rescue.safe_graphics=1"; then
+        SAFE_GRAPHICS=true
+        log "Mode graphique sécurisé (VESA)"
+    else
+        SAFE_GRAPHICS=false
+    fi
+
+    if echo "$CMDLINE" | grep -q "ai_rescue.no_ui=1"; then
+        NO_UI=true
+        log "Interface désactivée - terminal only"
+    else
+        NO_UI=false
+    fi
+}
+
+# ============================================================
+# Étape 2: Détection matérielle rapide
+# ============================================================
+quick_hardware_check() {
+    log "Détection matérielle rapide..."
+
+    # CPU
+    CPU_MODEL=$(grep "model name" /proc/cpuinfo | head -1 | cut -d: -f2 | xargs)
+    CPU_CORES=$(grep -c "processor" /proc/cpuinfo)
+    log "CPU: $CPU_MODEL ($CPU_CORES cores)"
+
+    # RAM
+    RAM_TOTAL=$(grep "MemTotal" /proc/meminfo | awk '{print $2}')
+    RAM_TOTAL_MB=$((RAM_TOTAL / 1024))
+    log "RAM: ${RAM_TOTAL_MB}MB"
+
+    # Disque
+    log "Disques:"
+    lsblk -d -o NAME,SIZE,TYPE 2>/dev/null | grep -E "disk|nvme" | while read -r line; do
+        log "  $line"
+    done
+
+    # Réseau
+    log "Interfaces réseau:"
+    ip -br link show 2>/dev/null | grep -v "lo" | while read -r line; do
+        log "  $line"
+    done
+}
+
+# ============================================================
+# Étape 3: Configuration réseau
+# ============================================================
+setup_network() {
+    log "Configuration réseau..."
+
+    # Essayer DHCP sur toutes les interfaces
+    for iface in $(ip -br link show 2>/dev/null | grep -v "lo" | awk '{print $1}'); do
+        log "  Tentative DHCP sur $iface..."
+        udhcpc -i "$iface" -t 5 -n -q 2>/dev/null && {
+            IP=$(ip addr show "$iface" 2>/dev/null | grep "inet " | awk '{print $2}')
+            log "  $iface: $IP ✓"
+        } || {
+            log "  $iface: Pas de DHCP"
+        }
+    done
+}
+
+# ============================================================
+# Étape 4: Persistance (si activée)
+# ============================================================
+setup_persistence() {
+    if [ "$PERSISTENCE" = true ]; then
+        log "Recherche partition persistance..."
+
+        # Chercher un label "AI_RESCUE_DATA" ou "persistence"
+        PERSIST_PART=$(blkid -L "AI_RESCUE_DATA" 2>/dev/null || blkid -L "persistence" 2>/dev/null)
+
+        if [ -n "$PERSIST_PART" ]; then
+            log "Partition persistance trouvée: $PERSIST_PART"
+            mkdir -p /mnt/persistence
+            mount "$PERSIST_PART" /mnt/persistence 2>/dev/null && {
+                log "Persistance montée sur /mnt/persistence"
+
+                # Restaurer les données
+                if [ -d /mnt/persistence/home ]; then
+                    cp -a /mnt/persistence/home/* /root/ 2>/dev/null
+                    log "Données utilisateur restaurées"
+                fi
+                if [ -d /mnt/persistence/ai-rescue ]; then
+                    cp -a /mnt/persistence/ai-rescue/* /opt/ai-rescue/data/ 2>/dev/null
+                    log "Données AI restaurées"
+                fi
+            } || log "Échec montage persistance"
+        else
+            log "Aucune partition de persistance trouvée"
+        fi
+    fi
+}
+
+# ============================================================
+# Étape 5: Lancer l'interface utilisateur
+# ============================================================
+start_ui() {
+    if [ "$NO_UI" = true ]; then
+        log "Mode terminal uniquement"
+        return
+    fi
+
+    log "Démarrage interface utilisateur..."
+
+    # Lancer le serveur web UI (port 8080)
+    if [ -f /opt/ai-rescue/ui/server.py ]; then
+        log "Lancement serveur web UI sur port 8080..."
+        cd /opt/ai-rescue && python3 -m ui.server &
+    fi
+
+    # Lancer un petit serveur HTTP pour l'UI statique si le serveur Python échoue
+    sleep 2
+    if ! curl -s http://localhost:8080 > /dev/null 2>&1; then
+        log "Lancement serveur HTTP fallback..."
+        cd /opt/ai-rescue/ui/static && python3 -m http.server 8080 &
+    fi
+
+    # Si X11 est disponible, lancer Chromium en kiosk
+    if [ "$SAFE_GRAPHICS" != true ] && command -v startx > /dev/null 2>&1; then
+        log "Lancement interface graphique (X11 + Chromium)..."
+        # Démarrer X avec openbox et chromium en mode kiosk
+        (
+            sleep 3
+            DISPLAY=:0 chromium --kiosk --no-first-run \
+                --disable-infobars --disable-session-crashed-bubble \
+                http://localhost:8080 2>/dev/null &
+        ) &
+    fi
+}
+
+# ============================================================
+# Étape 6: Lancer l'AI Core
+# ============================================================
+start_ai_core() {
+    log "Démarrage AI Core..."
+
+    if [ -f /opt/ai-rescue/ai_core/engine.py ]; then
+        cd /opt/ai-rescue && python3 ai_core/engine.py &
+        log "AI Core lancé (PID $!)"
+    else
+        log "AI Core non trouvé"
+    fi
+}
+
+# ============================================================
+# Étape 7: Services supplémentaires
+# ============================================================
+start_services() {
+    log "Démarrage services supplémentaires..."
+
+    # SSH pour debug distant
+    if [ -f /etc/ssh/sshd_config ]; then
+        log "SSH activé sur port 22"
+        /usr/sbin/sshd 2>/dev/null &
+    fi
+
+    # Audio (si disponible)
+    if command -v pulseaudio > /dev/null 2>&1; then
+        pulseaudio --start 2>/dev/null
+        log "Audio activé"
+    fi
+}
+
+# ============================================================
+# Étape 8: Résumé et attente
+# ============================================================
+show_summary() {
+    IP_ADDR=$(ip addr show 2>/dev/null | grep "inet " | grep -v "127.0.0.1" | head -1 | awk '{print $2}' | cut -d/ -f1)
+
+    clear 2>/dev/null || true
+    echo ""
+    echo "    ╔══════════════════════════════════════════╗"
+    echo "    ║          🤖 AI RESCUE USB v1.0          ║"
+    echo "    ║   Le technicien informatique universel  ║"
+    echo "    ║              dans une clé USB           ║"
+    echo "    ╚══════════════════════════════════════════╝"
+    echo ""
+    echo "    Interface web : http://${IP_ADDR:-localhost}:8080"
+    echo ""
+    echo "    Commandes disponibles :"
+    echo "      ai-rescue repair   - Réparation automatique"
+    echo "      ai-rescue diagnose - Diagnostic complet"
+    echo "      ai-rescue install  - Installer un OS"
+    echo "      ai-rescue backup   - Sauvegarder les données"
+    echo "      ai-rescue recover  - Récupérer fichiers"
+    echo "      ai-rescue talk     - Parler à l'IA"
+    echo "      ai-rescue status   - État du système"
+    echo ""
+    echo "    Branchez-vous sur http://localhost:8080"
+    echo "    ou tapez 'ai-rescue' pour commencer."
+    echo ""
+}
+
+# ============================================================
+# Main
+# ============================================================
+main() {
+    detect_boot_mode
+    quick_hardware_check
+    setup_network
+    setup_persistence
+    start_ai_core
+    start_ui
+    start_services
+    show_summary
+
+    log "Initialisation terminée."
+
+    # Garder le script en vie
+    while true; do
+        sleep 60
+    done
+}
+
+main

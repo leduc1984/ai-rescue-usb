@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Rescue USB</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <style>
+        /* ============================================
+           AI Rescue USB - Design System
+           Interface épurée pour débutants
+           ============================================ */
+
+        :root {
+            --bg: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-hover: #1a1a28;
+            --primary: #6c5ce7;
+            --primary-glow: rgba(108, 92, 231, 0.3);
+            --success: #00d2a0;
+            --warning: #ffa502;
+            --danger: #ff4757;
+            --text: #e0e0f0;
+            --text-muted: #808090;
+            --border: #1e1e30;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ============================================
+           Background particles (subtle)
+           ============================================ */
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.15;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--primary);
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+
+        /* ============================================
+           Main container
+           ============================================ */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============================================
+           Header
+           ============================================ */
+        .header {
+            text-align: center;
+            padding: 40px 20px 20px;
+        }
+
+        .logo {
+            font-size: 64px;
+            display: block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-top: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 16px;
+            margin-top: 8px;
+        }
+
+        /* ============================================
+           Greeting
+           ============================================ */
+        .greeting {
+            text-align: center;
+            margin: 10px 0 30px;
+            font-size: 20px;
+            color: var(--text-muted);
+            min-height: 30px;
+            transition: all 0.3s;
+        }
+
+        /* ============================================
+           Main cards grid
+           ============================================ */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            background: var(--bg-hover);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px var(--primary-glow);
+        }
+
+        .card:active {
+            transform: scale(0.98);
+        }
+
+        .card-icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+            transition: transform 0.3s;
+        }
+
+        .card:hover .card-icon {
+            transform: scale(1.1);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .card-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            background: rgba(108, 92, 231, 0.15);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* ============================================
+           Chat / Voice area
+           ============================================ */
+        .interaction-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-top: auto;
+            padding-bottom: 20px;
+        }
+
+        .chat-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            max-height: 350px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .chat-box.active {
+            display: block;
+        }
+
+        .chat-message {
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            line-height: 1.5;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-message.user {
+            background: var(--primary);
+            color: white;
+            margin-left: 40px;
+        }
+
+        .chat-message.ai {
+            background: var(--bg-hover);
+            margin-right: 40px;
+            border: 1px solid var(--border);
+        }
+
+        .chat-message.system {
+            background: transparent;
+            border: 1px dashed var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ============================================
+           Input area
+           ============================================ */
+        .input-area {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 50px;
+            color: var(--text);
+            font-size: 16px;
+            font-family: var(--font);
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .text-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .text-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font);
+        }
+
+        .btn-send {
+            background: var(--primary);
+            color: white;
+            min-width: 100px;
+            justify-content: center;
+        }
+
+        .btn-send:hover {
+            background: #7c6df0;
+            box-shadow: 0 4px 20px var(--primary-glow);
+        }
+
+        .btn-voice {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 2px solid var(--border);
+            font-size: 24px;
+            padding: 12px;
+            border-radius: 50%;
+            width: 52px;
+            height: 52px;
+            justify-content: center;
+        }
+
+        .btn-voice:hover {
+            border-color: var(--primary);
+            background: var(--bg-hover);
+        }
+
+        .btn-voice.recording {
+            border-color: var(--danger);
+            animation: pulse-rec 1.5s ease-in-out infinite;
+            background: rgba(255, 71, 87, 0.1);
+        }
+
+        @keyframes pulse-rec {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(255, 71, 87, 0); }
+        }
+
+        /* ============================================
+           Status bar
+           ============================================ */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: glow-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes glow-dot {
+            0%, 100% { box-shadow: 0 0 4px var(--success); }
+            50% { box-shadow: 0 0 12px var(--success); }
+        }
+
+        /* ============================================
+           Progress modal
+           ============================================ */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .modal-body {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ============================================
+           Results / Report
+           ============================================ */
+        .report {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .report.active {
+            display: block;
+        }
+
+        .report h3 {
+            margin-bottom: 16px;
+            color: var(--success);
+        }
+
+        .report-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+
+        .report-item.success::before { content: '✓'; color: var(--success); }
+        .report-item.failed::before { content: '✗'; color: var(--danger); }
+        .report-item.warning::before { content: '⚠'; color: var(--warning); }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* ============================================
+           Responsive
+           ============================================ */
+        @media (max-width: 600px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .title {
+                font-size: 24px;
+            }
+
+            .input-area {
+                flex-direction: column;
+            }
+
+            .btn-send {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background particles -->
+    <div class="bg-particles" id="particles"></div>
+
+    <!-- Main container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <span class="logo">🤖</span>
+            <h1 class="title">AI Rescue USB</h1>
+            <p class="subtitle">Le technicien informatique universel dans votre clé USB</p>
+        </header>
+
+        <!-- Greeting -->
+        <div class="greeting" id="greeting">Bonjour. Que voulez-vous faire ?</div>
+
+        <!-- Status bar -->
+        <div class="status-bar">
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span id="statusText">Système prêt</span>
+            </div>
+            <span id="hwSummary">Analyse en cours...</span>
+        </div>
+
+        <!-- Action cards -->
+        <div class="cards-grid" id="cardsGrid">
+            <div class="card" onclick="quickAction('repair')" data-action="repair">
+                <span class="card-icon">🛠️</span>
+                <div class="card-title">Réparer</div>
+                <div class="card-desc">Réparer le démarrage, le système ou les erreurs</div>
+            </div>
+
+            <div class="card" onclick="quickAction('install')" data-action="install">
+                <span class="card-icon">💿</span>
+                <div class="card-title">Installer</div>
+                <div class="card-desc">Installer Windows, Linux ou BSD</div>
+            </div>
+
+            <div class="card" onclick="quickAction('backup')" data-action="backup">
+                <span class="card-icon">📁</span>
+                <div class="card-title">Sauvegarder</div>
+                <div class="card-desc">Sauvegarder vos fichiers et documents</div>
+            </div>
+
+            <div class="card" onclick="quickAction('recover')" data-action="recover">
+                <span class="card-icon">🔍</span>
+                <div class="card-title">Récupérer</div>
+                <div class="card-desc">Récupérer des fichiers perdus ou supprimés</div>
+            </div>
+
+            <div class="card" onclick="quickAction('diagnose')" data-action="diagnose">
+                <span class="card-icon">🩺</span>
+                <div class="card-title">Diagnostiquer</div>
+                <div class="card-desc">Analyser l'état complet du PC</div>
+            </div>
+
+            <div class="card" onclick="quickAction('restore')" data-action="restore">
+                <span class="card-icon">🔄</span>
+                <div class="card-title">Restaurer</div>
+                <div class="card-desc">Restaurer une sauvegarde précédente</div>
+            </div>
+        </div>
+
+        <!-- Chat box -->
+        <div class="interaction-area">
+            <div class="chat-box active" id="chatBox">
+                <div class="chat-message ai">
+                    Bonjour ! Je suis l'assistant AI Rescue. Dites-moi ce dont vous avez besoin ou cliquez sur une carte ci-dessus.
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        class="text-input"
+                        id="userInput"
+                        placeholder="Décrivez votre problème... (ex: Mon PC ne démarre plus)"
+                        onkeypress="handleKeyPress(event)"
+                        autofocus
+                    />
+                </div>
+                <button class="btn btn-voice" id="voiceBtn" onclick="toggleVoice()" title="Parler à l'IA">
+                    🎤
+                </button>
+                <button class="btn btn-send" onclick="sendMessage()">
+                    Envoyer →
+                </button>
+            </div>
+        </div>
+
+        <!-- Report -->
+        <div class="report" id="report"></div>
+    </div>
+
+    <!-- Progress modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <div class="spinner" id="modalSpinner"></div>
+            <div class="modal-title" id="modalTitle">Analyse en cours...</div>
+            <div class="modal-body" id="modalBody">Veuillez patienter pendant que j'analyse votre système.</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <button class="btn btn-secondary" onclick="closeModal()" style="margin-top:16px;">Annuler</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // AI Rescue USB - UI Controller
+        // ============================================
+
+        const API_BASE = 'http://localhost:8080/api';
+
+        // State
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        // ============================================
+        // Initialization
+        // ============================================
+        async function init() {
+            createParticles();
+            await checkStatus();
+            updateGreeting();
+        }
+
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.width = particle.style.height = (Math.random() * 4 + 1) + 'px';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            const greetings = {
+                morning: 'Bonjour',
+                afternoon: 'Bonjour',
+                evening: 'Bonsoir',
+            };
+            let greeting = hour < 12 ? greetings.morning :
+                           hour < 18 ? greetings.afternoon :
+                                       greetings.evening;
+            document.getElementById('greeting').textContent =
+                `${greeting}. Que voulez-vous faire ?`;
+        }
+
+        // ============================================
+        // Status check
+        // ============================================
+        async function checkStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('statusText').textContent = 'Système prêt';
+                    document.getElementById('hwSummary').textContent =
+                        `CPU: ${data.cpu || '?'} | RAM: ${data.ram || '?'} | Disques: ${data.disks || '?'}`;
+                    document.querySelector('.status-dot').style.background = 'var(--success)';
+                } else {
+                    throw new Error('API not available');
+                }
+            } catch (e) {
+                document.getElementById('statusText').textContent = 'Connexion au système...';
+                document.getElementById('hwSummary').textContent = 'Détection en cours...';
+                document.querySelector('.status-dot').style.background = 'var(--warning)';
+            }
+        }
+
+        // ============================================
+        // Actions
+        // ============================================
+        async function quickAction(action) {
+            const card = document.querySelector(`[data-action="${action}"]`);
+            if (card) card.style.transform = 'scale(0.95)';
+            setTimeout(() => { if (card) card.style.transform = ''; }, 150);
+
+            const messages = {
+                repair: 'Répare mon ordinateur',
+                install: 'Je veux installer un système',
+                backup: 'Fais une sauvegarde de mes fichiers',
+                recover: 'Récupère mes fichiers perdus',
+                diagnose: 'Fais un diagnostic complet de mon PC',
+                restore: 'Restaure ma dernière sauvegarde',
+            };
+
+            addMessage(messages[action] || action, 'user');
+            await processRequest(action, messages[action] || action);
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            input.value = '';
+            addMessage(text, 'user');
+
+            // Envoi direct à l'IA conversationnelle — elle gère tout
+            await sendToAI(text);
+        }
+
+        // Envoi message au système conversationnel
+        async function sendToAI(userMessage) {
+            // Afficher "Je réfléchis..."
+            addMessage('...', 'ai');
+            setStatus('thinking', 'L\'IA réfléchit...');
+            const thinkingMsg = document.querySelector('.chat-message.ai:last-child');
+
+            try {
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userMessage }),
+                });
+
+                const data = await response.json();
+                const aiResponse = data.response || 'Je n\'ai pas compris. Pouvez-vous reformuler ?';
+
+                // Remplacer le "..."
+                if (thinkingMsg) {
+                    thinkingMsg.textContent = aiResponse;
+                    // Conversion markdown basique
+                    thinkingMsg.innerHTML = formatMarkdown(aiResponse);
+                }
+
+                setStatus('ready', 'Système prêt');
+
+            } catch (e) {
+                // Mode demo si l'API n'est pas joignable
+                if (thinkingMsg) {
+                    const demo = getDemoResponse(userMessage);
+                    thinkingMsg.innerHTML = formatMarkdown(demo);
+                }
+                setStatus('ready', 'Mode démo');
+            }
+        }
+
+        // Détection d'intention côté client pour le mode démo
+        async function processRequest(action, userText) {
+            await sendToAI(userText);
+        }
+
+        // Réponses démo quand le backend n'est pas connecté
+        function getDemoResponse(userMessage) {
+            const t = userMessage.toLowerCase();
+
+            // Flow installation
+            if (/installe|windows|linux|ubuntu|debian/.test(t)) {
+                if (/11/.test(t)) return "**Bien, je vais installer Windows 11.**\n\nVotre PC est compatible !\n- RAM : 8GB ✓\n- Disque : 500GB ✓\n- TPM : ✓\n\n⚠️ **Attention** : cette opération va effacer le disque.\n\nVoulez-vous continuer ? Répondez **OUI** ou **NON**.";
+                if (/10/.test(t)) return "**D'accord, Windows 10.**\n\nVotre PC est compatible. Voulez-vous que je commence ?";
+                if (/ubuntu/.test(t)) return "**Ubuntu 24.04 LTS — excellent choix.**\n\nJe vais le télécharger (5.7GB) et l'installer. D'accord ?";
+                if (/debian/.test(t)) return "**Debian 12 — parfait pour les vieux PC !**\n\nBesoin de 2GB RAM et 10GB disque. Compatible ✓\n\nJe commence ?";
+                // Première étape : demander quel OS
+                return "**Je peux installer plusieurs systèmes. Lequel préférez-vous ?**\n\n🪟 **Windows** : Windows 11, Windows 10\n🐧 **Linux** : Ubuntu, Debian, Fedora, Arch, Mint\n👹 **BSD** : FreeBSD, OpenBSD\n\nDites-moi simplement lequel vous voulez.";
+            }
+
+            // Flow réparation
+            if (/répare|fix|marche plus|démarre pas|écran noir|bleu|blue/.test(t)) {
+                return "**Je vais examiner votre ordinateur.**\n\nDétecté : Windows 10 sur /dev/sda1\nStatut du boot : ⚠️ endommagé\n\nJe peux réparer automatiquement :\n1. 🟢 Reconstruction BCD\n2. 🟡 Réparation EFI (nécessite redémarrage)\n3. 🟢 Vérification du disque\n\nVoulez-vous que je continue ?";
+            }
+
+            // Flow sauvegarde
+            if (/sauvegarde|backup|sauver|copie/.test(t)) {
+                return "**Je vais sauvegarder vos fichiers.**\n\nBranchez le disque externe où vous voulez sauvegarder.\n\nEnsuite dites-moi quand c'est prêt !";
+            }
+
+            // Flow récupération
+            if (/récupère|recover|perdu|effacé|supprim/.test(t)) {
+                return "**Je peux récupérer vos fichiers.**\n\nQuel type de fichiers avez-vous perdu ?\n- Photos (jpg, png, raw...)\n- Documents (pdf, docx...)\n- Vidéos (mp4, avi...)\n- Tout\n\nDites-moi et je vais scanner le disque.";
+            }
+
+            // Confirmation oui/non
+            if (/^oui$|^yes$|^ok$|^confirme|go/i.test(t)) {
+                return "**Parfait, je commence !**\n\n📥 Téléchargement...\n\n*(En mode démo, le vrai traitement se fera sur la clé USB bootable)*";
+            }
+            if (/^non$|^no$|^annule/.test(t)) {
+                return "**Opération annulée.**\n\nQue voulez-vous faire d'autre ?";
+            }
+
+            // Diagnostic
+            if (/diagnostique|diagnostic|problème|lent|pourquoi/.test(t)) {
+                return "**Diagnostic en cours...**\n\n✅ CPU : Intel Core i5 (OK)\n✅ RAM : 8GB (OK)\n⚠️ Disque : Samsung 500GB — santé 85%\n✅ Réseau : WiFi 5 connecté\n✅ Boot : OK\n\n**Recommandation** : votre disque perd de la santé. Envisagez une sauvegarde préventive et de le remplacer dans les 6-12 mois.";
+            }
+
+            // Aide
+            if (/aide|help|quoi|comment/.test(t)) {
+                return "**Que puis-je faire ?**\n\n📦 \"Installe Windows 11\" → installation auto\n🔧 \"Mon PC ne démarre plus\" → réparation\n💾 \"Sauvegarde mes fichiers\" → backup\n🔍 \"J'ai perdu mes photos\" → récupération\n🩺 \"Pourquoi c'est lent ?\" → diagnostic\n\nVous pouvez **me parler** 🎤 ou **écrire** votre demande !";
+            }
+
+            return "**Je n'ai pas bien compris.**\n\nDites-moi simplement ce que vous voulez faire :\n- Réparer\n- Installer\n- Sauvegarder\n- Récupérer des fichiers\n\nOu cliquez sur une des cartes ci-dessus ! 👆";
+        }
+
+        // Formatage markdown basique
+        function formatMarkdown(text) {
+            if (!text) return '';
+            return text
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                .replace(/^## (.+)$/gm, '<h2 style="margin:8px 0">$1</h2>')
+                .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                .replace(/^- (.+)$/gm, '• $1')
+                .replace(/\n/g, '<br>');
+        }
+
+        function setStatus(type, text) {
+            const indicator = document.querySelector('.status-dot');
+            const statusText = document.getElementById('statusText');
+            if (indicator) {
+                indicator.style.background = 
+                    type === 'thinking' ? 'var(--warning)' :
+                    type === 'error' ? 'var(--danger)' : 'var(--success)';
+            }
+            if (statusText) statusText.textContent = text;
+        }
+
+        function getDemoResult(action) {
+            const results = {
+                repair: {
+                    summary: "Réparation terminée. J'ai détecté un problème de démarrage Windows et l'ai réparé. Vous pouvez redémarrer.",
+                    actions: [
+                        { name: 'Détection matériel', status: 'success' },
+                        { name: 'Détection OS (Windows 10)', status: 'success' },
+                        { name: 'Réparation MBR', status: 'success' },
+                        { name: 'Reconstruction BCD', status: 'success' },
+                        { name: 'Vérification système', status: 'success' },
+                    ],
+                },
+                install: {
+                    summary: "Analyse terminée. Votre PC est compatible avec ces systèmes : Ubuntu 24.04, Debian 12, Windows 11, Linux Mint. Lequel voulez-vous installer ?",
+                    actions: [
+                        { name: 'Détection matériel', status: 'success' },
+                        { name: 'Vérification compatibilité', status: 'success' },
+                        { name: 'Analyse espace disque', status: 'success' },
+                    ],
+                },
+                backup: {
+                    summary: "Sauvegarde prête. J'ai trouvé 45 230 fichiers à sauvegarder (128 Go). Branchez un disque externe pour continuer.",
+                    actions: [
+                        { name: 'Scan des fichiers', status: 'success' },
+                        { name: 'Analyse espace nécessaire', status: 'success' },
+                        { name: 'Prêt pour sauvegarde', status: 'warning' },
+                    ],
+                },
+                recover: {
+                    summary: "Scan terminé. J'ai trouvé 1 247 fichiers récupérables. Voulez-vous que je les restaure ?",
+                    actions: [
+                        { name: 'Scan surface disque', status: 'success' },
+                        { name: 'Recherche fichiers', status: 'success' },
+                        { name: '1 247 fichiers trouvés', status: 'success' },
+                    ],
+                },
+                diagnose: {
+                    summary: "Diagnostic complet terminé. CPU: OK, RAM: OK, Disques: 1 avertissement (85% santé), Boot: OK, Réseau: OK.",
+                    actions: [
+                        { name: 'Test CPU', status: 'success' },
+                        { name: 'Test RAM', status: 'success' },
+                        { name: 'Test disques', status: 'warning' },
+                        { name: 'Test réseau', status: 'success' },
+                        { name: 'Test boot', status: 'success' },
+                    ],
+                },
+                restore: {
+                    summary: "Restauration terminée. Vos fichiers ont été restaurés avec succès.",
+                    actions: [
+                        { name: 'Recherche sauvegarde', status: 'success' },
+                        { name: 'Vérification intégrité', status: 'success' },
+                        { name: 'Restauration fichiers', status: 'success' },
+                    ],
+                },
+            };
+            return results[action] || results.repair;
+        }
+
+        // ============================================
+        // UI Helpers
+        // ============================================
+        function addMessage(text, type) {
+            const box = document.getElementById('chatBox');
+            box.classList.add('active');
+            const msg = document.createElement('div');
+            msg.className = `chat-message ${type}`;
+            msg.textContent = text;
+            box.appendChild(msg);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function showReport(result) {
+            if (!result || !result.actions) return;
+
+            const report = document.getElementById('report');
+            let html = '<h3>📋 Rapport</h3>';
+
+            for (const action of result.actions) {
+                const cls = action.status === 'success' ? 'success' :
+                            action.status === 'warning' ? 'warning' : 'failed';
+                html += `<div class="report-item ${cls}">${action.name}</div>`;
+            }
+
+            html += `
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="document.getElementById('report').classList.remove('active')">Fermer</button>
+                </div>
+            `;
+
+            report.innerHTML = html;
+            report.classList.add('active');
+        }
+
+        function showModal(title, body, progress) {
+            const modal = document.getElementById('modal');
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').textContent = body;
+            document.getElementById('progressFill').style.width = progress + '%';
+            modal.classList.add('active');
+        }
+
+        function updateModal(body, progress) {
+            document.getElementById('modalBody').textContent = body;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        // ============================================
+        // Voice recording
+        // ============================================
+        async function toggleVoice() {
+            const btn = document.getElementById('voiceBtn');
+
+            if (isRecording) {
+                stopRecording();
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (e) => {
+                    audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    // In production: send to speech-to-text API
+                    addMessage('🎤 Message vocal reçu', 'system');
+                    isRecording = false;
+                    btn.classList.remove('recording');
+                    btn.textContent = '🎤';
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                btn.classList.add('recording');
+                btn.textContent = '⏺️';
+                addMessage('🎤 Écoute en cours... Parlez maintenant.', 'system');
+
+            } catch (e) {
+                addMessage('Microphone non disponible. Utilisez le clavier.', 'system');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(t => t.stop());
+            }
+        }
+
+        // ============================================
+        // Keyboard
+        // ============================================
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // ============================================
+        // Utils
+        // ============================================
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // ============================================
+        // Status polling
+        // ============================================
+        setInterval(checkStatus, 30000); // Every 30s
+
+        // ============================================
+        // Init
+        // ============================================
+        init();
+    </script>
+</body>
+</html>

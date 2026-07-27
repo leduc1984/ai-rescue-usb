@@ -1,0 +1,57 @@
+# AI Rescue USB
+# Le technicien informatique universel dans une clé USB
+# Version 1.0.0
+
+[project]
+name = "ai-rescue-usb"
+version = "1.0.0"
+description = "Clé USB bootable universelle avec IA pour sauver, réparer, installer et configurer n'importe quel ordinateur"
+authors = ["AI Rescue Team"]
+
+[build]
+base_distro = "alpine"              # Alpine Linux minimal (~130MB)
+kernel_version = "6.6-lts"
+target_arch = "x86_64"
+boot_modes = ["uefi", "bios_legacy"]
+secure_boot_support = true
+iso_size_target_mb = 800            # OS de base
+max_usb_size_gb = 32
+
+[system]
+ram_only = true                     # Mode RAM par défaut
+persistence_optional = true         # Persistance optionnelle
+min_ram_mb = 1024                   # Minimum 1GB RAM
+recommended_ram_mb = 4096
+
+[ai_core]
+local_model = "llama-3.2-3b-q4"    # Modèle local quantifié 4-bit
+fallback_model = "tinyllama-1.1b"
+gpu_support = ["cuda", "vulkan", "cpu"]
+max_model_size_mb = 2000
+offline_first = true
+
+[features]
+hardware_detection = true
+os_detection = true
+windows_repair = true
+linux_repair = true
+bsd_repair = true
+universal_installer = true
+backup_restore = true
+file_recovery = true
+driver_manager = true
+skill_system = true
+voice_interface = true
+multi_language = true
+
+[security]
+confirm_destructive_ops = true
+read_only_default = true
+sandboxed_execution = true
+audit_log = true
+
+[interfaces]
+web_ui = true
+voice = true
+terminal_advanced = true
+accessibility = true

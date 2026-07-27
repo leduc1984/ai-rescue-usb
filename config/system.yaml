@@ -1,0 +1,49 @@
+# AI Rescue USB - System Configuration
+system:
+  name: "AI Rescue USB"
+  version: "1.0.0"
+  codename: "Genesis"
+
+boot:
+  mode: "live"
+  persistence: true
+  ram_size: "2048MB"
+  timeout: 30
+
+ai:
+  model_path: "/opt/ai-rescue/models/"
+  default_model: "llama-3.2-3b-q4_k_m.gguf"
+  fallback_model: "tinyllama-1.1b-q4_k_m.gguf"
+  context_window: 4096
+  max_tokens: 1024
+  temperature: 0.7
+  gpu_enabled: false
+  gpu_layers: 0
+
+detection:
+  scan_interval: 5
+  hardware_profiles: true
+  os_detection: true
+
+security:
+  confirmation_required: true
+  backup_before_modify: true
+  verify_checksums: true
+  secure_boot_compatible: true
+
+download:
+  mirror_url: "https://ai-rescue.org/downloads/"
+  cache_dir: "/opt/ai-rescue/cache/"
+  verify_gpg: true
+
+ui:
+  language: "auto"
+  theme: "dark"
+  accessibility: true
+  voice_enabled: false
+
+logging:
+  level: "INFO"
+  file: "/var/log/ai-rescue/system.log"
+  rotation: "10MB"
+  backup_count: 5
