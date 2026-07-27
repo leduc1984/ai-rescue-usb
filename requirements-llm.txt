@@ -1,5 +1,11 @@
 # Optional: local LLM support for ai_core/engine.py.
-# Requires a C/C++ compiler toolchain to build (compiles llama.cpp from
-# source unless a prebuilt wheel matches your platform/Python version).
-# Without this installed, the engine falls back to rule-based responses.
+# Without this installed (or without a model in models/*.gguf), the
+# engine falls back to rule-based responses — see README for details.
+#
+# On Windows/Linux/macOS with a plain CPU, install the maintainer's
+# prebuilt wheel instead of compiling from source:
+#   pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+#
+# `pip install -r requirements-llm.txt` below compiles from source, which
+# needs a C/C++ compiler toolchain and can fail depending on your setup.
 llama-cpp-python>=0.3.0,<0.4.0

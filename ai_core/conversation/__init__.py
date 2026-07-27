@@ -8,7 +8,7 @@ from .recovery_flow import RecoveryFlow
 from .diagnose_flow import DiagnoseFlow
 from .antivirus_flow import AntivirusFlow
 from .network_flow import NetworkFlow
-from .driver_flow import DriverAgentFlow
+from .driver_flow import DriverInstallFlow
 
 __all__ = [
     "ConversationManager",
@@ -22,5 +22,5 @@ __all__ = [
     "DiagnoseFlow",
     "AntivirusFlow",
     "NetworkFlow",
-    "DriverAgentFlow",
+    "DriverInstallFlow",
 ]

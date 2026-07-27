@@ -212,10 +212,11 @@ class UniversalAssistant:
     Fonctionne hors flux spéciaux. Utilise la base de connaissance embarquée.
     """
 
-    def __init__(self):
+    def __init__(self, llm=None):
         self.knowledge = KNOWLEDGE
         self.hw_detector = None
         self.os_detector = None
+        self.llm = llm
         self._load_agents()
 
     def _load_agents(self):
@@ -264,8 +265,30 @@ class UniversalAssistant:
         if any(w in low for w in ["quel os", "système installé", "windows ou linux"]):
             return self._describe_os()
 
-        # 7. Réponse générique utile
+        # 7. LLM local si disponible, sinon réponse générique statique
+        if self.llm and getattr(self.llm, "loaded", False):
+            llm_answer = self._llm_answer(user_input)
+            if llm_answer:
+                return llm_answer
+
         return self._generic_help(user_input)
+
+    def _llm_answer(self, user_input: str) -> Optional[str]:
+        """Demande au LLM local de répondre, avec le contexte de ce que l'outil sait faire."""
+        system = (
+            "Tu es AI Rescue, un assistant IA embarqué sur une clé USB de dépannage "
+            "informatique. Tu aides à réparer Windows/Linux/BSD, installer un OS, "
+            "sauvegarder des fichiers, récupérer des fichiers supprimés et diagnostiquer "
+            "un ordinateur. Réponds en français, en 2-3 phrases maximum, de façon simple "
+            "et concrète. Si la demande correspond à une de ces actions, dis à "
+            "l'utilisateur quoi taper pour la démarrer (ex: \"répare mon PC\", "
+            "\"installe Ubuntu\")."
+        )
+        try:
+            return self.llm.generate(user_input, max_tokens=200, system=system)
+        except Exception as e:
+            log.warning(f"LLM answer failed, falling back to static help: {e}")
+            return None
 
     def _greeting(self) -> str:
         """Salutation."""

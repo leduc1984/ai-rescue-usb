@@ -13,6 +13,14 @@ from typing import Optional, Callable
 
 # Assistant universel (répond à TOUTE question)
 from ai_core.conversation.universal_assistant import UniversalAssistant
+from ai_core.conversation.install_flow import InstallFlow
+from ai_core.conversation.repair_flow import RepairFlow
+from ai_core.conversation.backup_flow import BackupFlow
+from ai_core.conversation.recovery_flow import RecoveryFlow
+from ai_core.conversation.diagnose_flow import DiagnoseFlow
+from ai_core.conversation.antivirus_flow import AntivirusFlow
+from ai_core.conversation.network_flow import NetworkFlow
+from ai_core.conversation.driver_flow import DriverInstallFlow
 
 log = logging.getLogger("conversation")
 
@@ -60,11 +68,11 @@ class ConversationManager:
     """
 
     def __init__(self, llm=None, voice=None):
-        self.llm = llm
+        self.llm = llm if llm is not None else self._load_default_llm()
         self.voice = voice
 
         # Assistant universel (répond à TOUTE question)
-        self.universal = UniversalAssistant()
+        self.universal = UniversalAssistant(llm=self.llm)
 
         # État
         self.state = ConversationState.IDLE
@@ -86,7 +94,27 @@ class ConversationManager:
             "diagnose": DiagnoseFlow,
             "antivirus": AntivirusFlow,
             "network": NetworkFlow,
+            "driver": DriverInstallFlow,
         }
+
+    @staticmethod
+    def _load_default_llm():
+        """Charge le LLM local si llama-cpp-python + un modèle .gguf sont disponibles.
+
+        Dégrade silencieusement (retourne None) si l'un des deux manque — le reste
+        du système continue de fonctionner en mode rule-based (voir universal_assistant).
+        """
+        try:
+            from ai_core.engine import LocalLLM
+            llm = LocalLLM()
+            llm.load_model()
+            if llm.loaded:
+                log.info("LLM local chargé pour la conversation.")
+                return llm
+            log.info("Aucun LLM local chargé (paquet ou modèle absent) — mode rule-based.")
+        except Exception as e:
+            log.warning(f"Chargement du LLM local échoué, mode rule-based: {e}")
+        return None
 
     def register_flow(self, name: str, flow_class):
         """Enregistre un flux de conversation."""

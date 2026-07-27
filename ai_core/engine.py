@@ -122,18 +122,32 @@ class LocalLLM:
     Supporte llama.cpp, MLX, et ONNX pour une compatibilité maximale.
     """
 
-    def __init__(self, model_path: str = "/opt/ai-rescue/models"):
-        self.model_path = Path(model_path)
+    def __init__(self, model_path: Optional[str] = None):
+        self.model_path = Path(model_path) if model_path else self._resolve_model_path()
         self.model = None
         self.tokenizer = None
         self.loaded = False
         self.backend = self._detect_backend()
 
+    @staticmethod
+    def _resolve_model_path() -> Path:
+        """/opt/ai-rescue/models on the live rescue system; a local models/ dir elsewhere."""
+        env_path = os.environ.get("AI_RESCUE_MODELS_DIR")
+        if env_path:
+            return Path(env_path)
+        opt_path = Path("/opt/ai-rescue/models")
+        if opt_path.is_dir():
+            return opt_path
+        return Path(__file__).resolve().parent.parent / "models"
+
     def _detect_backend(self) -> str:
         """Détecte quel backend LLM est disponible."""
         # Priorité: llama.cpp > onnx > fallback
-        if Path("/usr/lib/libllama.so").exists():
+        try:
+            import llama_cpp  # noqa: F401
             return "llamacpp"
+        except ImportError:
+            pass
         try:
             import onnxruntime  # noqa: F401
             return "onnx"
@@ -142,8 +156,14 @@ class LocalLLM:
         return "fallback"
 
     def load_model(self, model_name: str = "llama-3.2-3b-q4.gguf"):
-        """Charge un modèle local."""
+        """Charge un modèle local. À défaut du nom demandé, prend le premier .gguf trouvé."""
         model_file = self.model_path / model_name
+        if not model_file.exists() and self.model_path.is_dir():
+            found = next(self.model_path.glob("*.gguf"), None)
+            if found:
+                log.info(f"{model_name} introuvable, utilisation de {found.name} à la place")
+                model_file = found
+
         log.info(f"Loading model: {model_file} (backend: {self.backend})")
 
         if self.backend == "llamacpp":
@@ -177,17 +197,26 @@ class LocalLLM:
         log.info("ONNX backend not fully implemented, using fallback")
         self.loaded = False
 
-    def generate(self, prompt: str, max_tokens: int = 256) -> str:
-        """Génère une réponse à partir du prompt."""
+    def generate(self, prompt: str, max_tokens: int = 256, system: Optional[str] = None) -> str:
+        """Génère une réponse à partir du prompt.
+
+        Utilise l'API chat (pas la complétion brute) : llama-cpp-python applique
+        automatiquement le chat template embarqué dans le GGUF, ce qui donne des
+        réponses cohérentes au lieu du modèle qui continue le texte au hasard.
+        """
         if self.loaded and self.backend == "llamacpp":
             try:
-                output = self.model(
-                    prompt,
+                messages = []
+                if system:
+                    messages.append({"role": "system", "content": system})
+                messages.append({"role": "user", "content": prompt})
+
+                output = self.model.create_chat_completion(
+                    messages=messages,
                     max_tokens=max_tokens,
                     temperature=0.7,
-                    stop=["</s>", "User:", "Human:"],
                 )
-                return output["choices"][0]["text"].strip()
+                return output["choices"][0]["message"]["content"].strip()
             except Exception as e:
                 log.error(f"Generation error: {e}")
 

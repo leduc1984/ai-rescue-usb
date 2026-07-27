@@ -91,9 +91,10 @@ The core of AI Rescue USB is already built and testable:
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| 🗣️ Conversation engine (text/voice) | ✅ Working | 20+ technical scenarios covered |
+| 🗣️ Conversation engine (text) | ✅ Working | Guided flows + free-form fallback, covered by tests |
+| 🧠 Local LLM | 🟡 Prototype | Real inference via llama.cpp; ships with a tiny demo model, quality scales with model size — see [Quick Start](#-quick-start-for-developers) |
 | 🔧 Install flow (Win/Lin/BSD) | ✅ Working | 9 OS supported, compatibility check |
-| 🛠️ Repair flow (boot/grub/fs) | ✅ Working | Windows, Linux, BSD supported |
+| 🛠️ Repair flow (boot/grub/fs) | ✅ Working | Windows, Linux, BSD — executes for real after explicit confirmation |
 | 💾 Backup flow | ✅ Working | File + disk image |
 | 🔍 Recovery flow | ✅ Working | Deleted files, failing drives |
 | 🩺 Diagnose flow | ✅ Working | Hardware + OS analysis |
@@ -101,10 +102,10 @@ The core of AI Rescue USB is already built and testable:
 | 🌐 Network flow | 🟡 Prototype | WiFi, diagnostics |
 | 🔌 Driver installer | 🟡 Prototype | Auto-detect + install |
 | 🖼️ Web UI | ✅ Working | Modern chat interface |
-| 📀 ISO builder | 🟡 Prototype | Docker + Alpine |
-| 🎙️ Voice (Whisper + Piper) | ⏳ Planned | Architecture ready |
+| 📀 ISO builder | 🟡 Prototype | Docker + Alpine, not yet booted on real hardware |
+| 🎙️ Voice (Whisper + Piper) | ⏳ Planned | Not started |
 
-**This is a working prototype, not vaporware.** The conversation engine can already answer any computer question and run guided repairs. The goal now is to ship a real bootable ISO.
+The conversation engine, repair flow, and LLM wiring are covered by [automated tests](tests/). The ISO itself hasn't been built and booted end-to-end yet — that's the next milestone.
 
 ---
 
@@ -161,9 +162,16 @@ cd ai-rescue-usb
 # Install dependencies
 pip install -r requirements.txt
 
-# Optional: local LLM support (needs a C/C++ compiler toolchain).
+# Optional: local LLM support — see requirements-llm.txt for a prebuilt
+# wheel option (no compiler needed on Windows/Linux/macOS CPU-only).
 # Skip this and the engine falls back to rule-based mode.
 pip install -r requirements-llm.txt
+
+# Optional: download a small local model to actually run it (~670MB).
+# LocalLLM picks up any .gguf file placed in models/, whatever its name.
+mkdir -p models
+curl -L -o models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf \
+  https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf
 
 # Run the UI locally
 python ui/server.py

@@ -226,11 +226,9 @@ class RepairFlow:
             if self.manager.on_progress:
                 self.manager.on_progress("repair", (i / len(self.repair_actions)) * 100)
             
-            # Simuler exécution
-            await asyncio.sleep(0.2)
-            
-            # Exécuter (dry run pour l'instant)
-            result = self.repair_agent.execute_repair(action, dry_run=True)
+            # L'utilisateur a déjà vu la liste des actions (avec niveau de risque)
+            # et a explicitement confirmé à l'étape précédente : on exécute pour de vrai.
+            result = self.repair_agent.execute_repair(action, dry_run=False)
             results.append(result)
         
         # Rapport

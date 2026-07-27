@@ -95,6 +95,11 @@ site/
 node_modules/
 *.lock
 
+# Modèles LLM (gros fichiers binaires, à télécharger séparément — voir README)
+models/*.gguf
+models/*.onnx
+models/*.bin
+
 # Fichiers temporaires et locaux
 README_OLD.md
 hermes-verify-*.py

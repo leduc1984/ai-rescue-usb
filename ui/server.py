@@ -222,7 +222,7 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
 
             self._json_response({
                 "status": "ready",
-                "version": "1.0.0",
+                "version": "0.1.0",
                 "cpu": self._hw_cache.cpu.model[:40],
                 "ram": f"{self._hw_cache.ram.total_mb}MB",
                 "disks": len(self._hw_cache.disks),
@@ -319,14 +319,22 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
         self._handle_process()
 
     def _handle_repair(self):
-        """POST /api/repair - Réparation."""
+        """POST /api/repair - Réparation.
+
+        Sans `confirmed: true` dans le corps, seules les actions SAFE/LOW
+        s'exécutent réellement ; les actions MEDIUM+ sont renvoyées comme
+        nécessitant confirmation, pas exécutées. Le client doit renvoyer
+        la requête avec `confirmed: true` après avoir montré ces actions
+        à l'utilisateur et obtenu son accord explicite.
+        """
         try:
             body = self._read_body()
             os_type = body.get("os_type", "windows")
             symptoms = body.get("symptoms", ["boot problem"])
+            confirmed = body.get("confirmed", False) is True
 
             results = self._repair_agent.auto_repair(
-                os_type, symptoms, dry_run=False, confirm=False
+                os_type, symptoms, dry_run=False, confirm=not confirmed
             )
 
             self._json_response({
@@ -334,7 +342,7 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
                 "summary": self._repair_agent.summary(),
                 "actions": [
                     {"name": r.action, "status": "success" if r.success else "failed",
-                     "time": r.time_taken}
+                     "time": r.time_taken, "error": r.error or None}
                     for r in results
                 ],
             })
@@ -397,8 +405,17 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
             self._json_response({"status": "error", "error": str(e)}, status=500)
 
 
-def run_server(host="0.0.0.0", port=8080):
-    """Démarre le serveur HTTP."""
+def run_server(host=None, port=8080):
+    """Démarre le serveur HTTP.
+
+    Écoute sur localhost par défaut : ce serveur exécute des commandes
+    système (réparation, etc.) sans authentification, donc l'exposer sur
+    le réseau expose ces actions à quiconque sur le même réseau. Pour
+    l'assistance à distance (cas d'usage légitime), définir explicitement
+    AI_RESCUE_HOST=0.0.0.0.
+    """
+    if host is None:
+        host = os.environ.get("AI_RESCUE_HOST", "127.0.0.1")
     # Initialiser les composants
     RescueAPIHandler.init_components()
 
