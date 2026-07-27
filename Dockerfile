@@ -30,12 +30,12 @@ RUN pip3 install --no-cache-dir -r /tmp/requirements.txt
 # Create working directory
 WORKDIR /build
 
-# Copy build scripts
-COPY docker/build.sh /usr/local/bin/build.sh
-RUN chmod +x /usr/local/bin/build.sh
-
-# Copy project files
+# Copy project files (this includes build/build.sh, which computes its own
+# location via BASH_SOURCE to find the project root — it must stay inside
+# the copied tree, not be relocated to /usr/local/bin, or every relative
+# path it builds (ai_core/, requirements.txt, system/...) resolves wrong).
 COPY . /build/
+RUN chmod +x /build/build/build.sh
 
 # Default command
-CMD ["/usr/local/bin/build.sh"]
+CMD ["/build/build/build.sh"]

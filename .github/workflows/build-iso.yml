@@ -35,8 +35,12 @@ jobs:
         run: |
           mkdir -p output
           docker build -t ai-rescue-builder .
+          # build/build.sh resolves its own output dir as $PROJECT_ROOT/output,
+          # and PROJECT_ROOT is /build inside this image (WORKDIR /build +
+          # COPY . /build/) — mount there, not /output, or the ISO never
+          # reaches the host.
           docker run --privileged \
-            -v "$(pwd)/output:/output" \
+            -v "$(pwd)/output:/build/output" \
             ai-rescue-builder
 
       - name: Verify ISO exists

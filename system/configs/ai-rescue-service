@@ -5,9 +5,6 @@
 # Service OpenRC qui démarre automatiquement AI Rescue au boot.
 
 description="AI Rescue USB - Universal Computer Technician"
-command="/opt/ai-rescue/ai-rescue"
-command_args="talk"
-command_background=true
 pidfile="/var/run/ai-rescue.pid"
 
 depend() {

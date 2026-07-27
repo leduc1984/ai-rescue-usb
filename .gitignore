@@ -10,7 +10,6 @@ __pycache__/
 .Python
 *.egg-info/
 dist/
-build/
 *.egg
 
 # Virtual environments
@@ -34,12 +33,16 @@ logs/
 *~
 .DS_Store
 
-# Build outputs
-build/
+# Build outputs — build/build.sh itself is source and must stay tracked;
+# only the directories it populates at build time (a full Alpine rootfs,
+# gigabytes) are generated.
+build/iso_root/
+build/overlay/
+output/
+cache/
 dist/
 *.iso
 *.img
-build/
 
 # Herpes/Hermes (sessions locales)
 hermes-cache/
@@ -103,5 +106,4 @@ models/*.bin
 # Fichiers temporaires et locaux
 README_OLD.md
 hermes-verify-*.py
-ai-rescue
 

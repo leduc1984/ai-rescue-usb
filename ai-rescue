@@ -1,0 +1,265 @@
+#!/usr/bin/env python3
+"""
+AI Rescue USB - CLI Interface
+==============================
+Interface en ligne de commande pour AI Rescue USB.
+Accessible via la commande 'ai-rescue'.
+"""
+
+import argparse
+import asyncio
+import json
+import logging
+import os
+import sys
+from pathlib import Path
+
+# Setup path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Les réponses contiennent des emojis/accents ; la console par défaut sur
+# Windows (cp1252) et certains TTY minimaux plantent sinon avec un
+# UnicodeEncodeError dès qu'un caractère type ✓ apparaît.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")
+
+from ai_core.engine import AIRescueCore
+from detection.hardware.detector import HardwareDetector
+from detection.os.detector import OSDetector
+from agents.repair.repair_agent import RepairAgent
+from agents.install_backup_recovery import (
+    InstallAgent, BackupAgent, RecoveryAgent, DriverAgent,
+)
+from security.security_manager import SecurityManager, safe_execute
+
+log = logging.getLogger("ai-rescue-cli")
+
+
+def cmd_status():
+    """Affiche l'état du système."""
+    hw = HardwareDetector().detect_all()
+    os_info = OSDetector().detect_all()
+
+    print(HardwareDetector().summary(hw))
+    print()
+    print(OSDetector().summary(os_info))
+
+
+def cmd_repair(args):
+    """Réparation automatique."""
+    os_info = OSDetector().detect_all()
+
+    if not os_info.detected_os:
+        print("❌ Aucun système d'exploitation détecté.")
+        return
+
+    agent = RepairAgent()
+    symptoms = args.symptoms if args.symptoms else ["boot problem"]
+
+    for os_install in os_info.detected_os:
+        print(f"\n🔧 Réparation de {os_install.name} ({os_install.type})...")
+
+        if args.dry_run:
+            print("  Mode simulation (dry run)")
+            results = agent.auto_repair(os_install.type, symptoms, dry_run=True)
+        else:
+            results = agent.auto_repair(
+                os_install.type, symptoms,
+                dry_run=False, confirm=not args.force
+            )
+
+        print(agent.summary())
+
+
+def cmd_diagnose(args):
+    """Diagnostic complet."""
+    print("\n🔍 Diagnostic complet du système...\n")
+
+    # Matériel
+    print("─── MATÉRIEL ───")
+    hw = HardwareDetector().detect_all()
+    print(HardwareDetector().summary(hw))
+
+    # OS
+    print("\n─── SYSTÈMES ───")
+    os_info = OSDetector().detect_all()
+    print(OSDetector().summary(os_info))
+
+    # Réparation
+    if os_info.detected_os:
+        print("\n─── RÉPARATIONS SUGGÉRÉES ───")
+        agent = RepairAgent()
+        for os_install in os_info.detected_os:
+            if os_install.boot_status in ("broken", "missing"):
+                actions = agent.diagnose(os_install.type, ["boot problem"])
+                for a in actions:
+                    print(f"  • {a.description} ({a.risk.value})")
+
+
+def cmd_install(args):
+    """Installation d'OS."""
+    hw = HardwareDetector().detect_all()
+    install = InstallAgent()
+
+    hardware_info = {
+        "ram_mb": hw.ram.total_mb,
+        "disk_gb": max((d.size_gb for d in hw.disks), default=0),
+        "tpm": hw.tpm,
+        "secure_boot": hw.secure_boot,
+    }
+
+    if args.list:
+        compat = install.list_compatible(hardware_info)
+        print("\n💿 Systèmes compatibles avec votre PC :")
+        for os_info in compat:
+            print(f"  ✓ {os_info['name']} ({os_info['type']}) - {os_info['iso_size_gb']:.1f}GB")
+        return
+
+    if args.os:
+        check = install.check_compatibility(args.os, hardware_info)
+        if check["compatible"]:
+            print(f"✅ {check['os']} est compatible !")
+            print(f"   Configuration minimale: RAM {check['min_requirements']['ram']}, "
+                  f"Disque {check['min_requirements']['disk']}")
+        else:
+            print(f"❌ {check['os']} n'est pas compatible :")
+            for issue in check["issues"]:
+                print(f"   - {issue}")
+
+
+def cmd_backup(args):
+    """Sauvegarde."""
+    hw = HardwareDetector().detect_all()
+
+    print("\n📁 Disques disponibles pour sauvegarde :")
+    for disk in hw.disks:
+        print(f"  {disk.device} - {disk.model} ({disk.size_gb:.0f}GB)")
+
+    if args.source:
+        backup = BackupAgent()
+        scan = backup.scan_files(args.source)
+        if scan["success"]:
+            s = scan["stats"]
+            print(f"\n📊 Fichiers trouvés : {s['total_files']:,} ({s['total_size_gb']:.1f}GB)")
+        else:
+            print(f"❌ Erreur: {scan.get('error')}")
+
+
+def cmd_recover(args):
+    """Récupération de fichiers."""
+    hw = HardwareDetector().detect_all()
+
+    print("\n🔍 Disques à scanner pour récupération :")
+    for disk in hw.disks:
+        print(f"  {disk.device} - {disk.model} ({disk.size_gb:.0f}GB)")
+
+    if args.device:
+        recovery = RecoveryAgent()
+        scan = recovery.scan_for_lost_files(args.device)
+        if scan["success"]:
+            print(f"\n📊 Fichiers récupérables: {scan['recoverable_files']}")
+        else:
+            print(f"❌ Erreur: {scan.get('error')}")
+
+
+def cmd_talk(args):
+    """Parler à l'IA."""
+    core = AIRescueCore()
+
+    async def chat():
+        if args.message:
+            result = await core.process(args.message)
+            print(result["summary"])
+        else:
+            print("\n💬 Mode conversationnel. Tapez 'quit' pour quitter.\n")
+            while True:
+                try:
+                    user_input = input("Vous > ").strip()
+                    if user_input.lower() in ("quit", "exit", "q"):
+                        print("Au revoir ! 👋")
+                        break
+                    if not user_input:
+                        continue
+                    result = await core.process(user_input)
+                    print(f"\nAI Rescue > {result['summary']}\n")
+                except KeyboardInterrupt:
+                    print("\nAu revoir ! 👋")
+                    break
+
+    asyncio.run(chat())
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="🤖 AI Rescue USB - Le technicien informatique universel",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Exemples:
+  ai-rescue status                    Affiche l'état du système
+  ai-rescue repair                    Réparation automatique
+  ai-rescue diagnose                  Diagnostic complet
+  ai-rescue install --list            Liste les OS compatibles
+  ai-rescue install --os ubuntu_2404  Vérifie compatibilité Ubuntu
+  ai-rescue backup --source /mnt/sda1 Analyse sauvegarde
+  ai-rescue recover --device /dev/sda Récupération fichiers
+  ai-rescue talk "Mon PC ne démarre plus"  Parle à l'IA
+        """,
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Commandes disponibles")
+
+    # status
+    subparsers.add_parser("status", help="Afficher l'état du système")
+
+    # repair
+    repair_parser = subparsers.add_parser("repair", help="Réparation automatique")
+    repair_parser.add_argument("symptoms", nargs="*", help="Symptômes")
+    repair_parser.add_argument("--dry-run", action="store_true", help="Simulation")
+    repair_parser.add_argument("--force", action="store_true", help="Sans confirmation")
+
+    # diagnose
+    subparsers.add_parser("diagnose", help="Diagnostic complet")
+
+    # install
+    install_parser = subparsers.add_parser("install", help="Installation OS")
+    install_parser.add_argument("--list", action="store_true", help="Lister OS compatibles")
+    install_parser.add_argument("--os", help="ID de l'OS à vérifier")
+
+    # backup
+    backup_parser = subparsers.add_parser("backup", help="Sauvegarde")
+    backup_parser.add_argument("--source", help="Répertoire source")
+    backup_parser.add_argument("--dest", help="Destination")
+
+    # recover
+    recover_parser = subparsers.add_parser("recover", help="Récupération fichiers")
+    recover_parser.add_argument("--device", help="Périphérique à scanner")
+
+    # talk
+    talk_parser = subparsers.add_parser("talk", help="Parler à l'IA")
+    talk_parser.add_argument("message", nargs="?", help="Message (optionnel)")
+
+    args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
+        return
+
+    commands = {
+        "status": cmd_status,
+        "repair": lambda: cmd_repair(args),
+        "diagnose": lambda: cmd_diagnose(args),
+        "install": lambda: cmd_install(args),
+        "backup": lambda: cmd_backup(args),
+        "recover": lambda: cmd_recover(args),
+        "talk": lambda: cmd_talk(args),
+    }
+
+    if args.command in commands:
+        commands[args.command]()
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
