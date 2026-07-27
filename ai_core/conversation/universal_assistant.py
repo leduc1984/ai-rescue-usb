@@ -7,6 +7,7 @@ et redirection vers le bon agent quand nécessaire.
 """
 
 import logging
+import re
 from typing import Optional
 from pathlib import Path
 
@@ -354,6 +355,13 @@ class UniversalAssistant:
         self.hw_detector = None
         self.os_detector = None
         self.llm = llm
+        self.tool_agent = None
+        if llm is not None:
+            try:
+                from ai_core.tool_agent import ToolAgent
+                self.tool_agent = ToolAgent(llm)
+            except Exception as e:
+                log.warning(f"ToolAgent unavailable: {e}")
         self._load_agents()
 
     def _load_agents(self):
@@ -387,8 +395,10 @@ class UniversalAssistant:
                 if trigger in low:
                     return data["answer_fr"] if lang == "fr" else data["answer_en"]
 
-        # 2. Salutations
-        if any(w in low for w in ["bonjour", "hello", "hi", "hey", "salut"]):
+        # 2. Salutations — mots courts ("hi", "hey") avec frontière de mot, sinon
+        # ils matchent n'importe où en substring ("this" contient "hi", "they"
+        # contient "hey").
+        if re.search(r"\b(bonjour|hello|hi|hey|salut)\b", low):
             return self._greeting(lang)
 
         # 3. Remerciements
@@ -412,7 +422,16 @@ class UniversalAssistant:
                                    "quel os", "système installé", "windows ou linux"]):
             return self._describe_os(lang)
 
-        # 7. LLM local si disponible, sinon réponse générique statique
+        # 7. Agent à outils : le LLM choisit un outil réel (détection matériel/OS,
+        # diagnostic, compatibilité install) plutôt qu'un simple mot-clé, l'exécute
+        # pour de vrai, puis résume le résultat réel. Lecture seule uniquement —
+        # aucune réparation/installation ne s'exécute par ce chemin.
+        if self.tool_agent:
+            tool_answer = self.tool_agent.answer(user_input, lang)
+            if tool_answer:
+                return tool_answer
+
+        # 8. LLM local si disponible, sinon réponse générique statique
         if self.llm and getattr(self.llm, "loaded", False):
             llm_answer = self._llm_answer(user_input, lang)
             if llm_answer:

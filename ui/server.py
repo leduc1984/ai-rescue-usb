@@ -176,6 +176,8 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
             self._handle_install()
         elif parsed.path == "/api/backup":
             self._handle_backup()
+        elif parsed.path == "/api/diagnose-image":
+            self._handle_diagnose_image()
         else:
             self.send_error(404, "Not Found")
 
@@ -385,6 +387,62 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
     def _handle_chat(self):
         """POST /api/chat - Alias conversationnel (même logique que /api/process)."""
         self._handle_process()
+
+    def _handle_diagnose_image(self):
+        """POST /api/diagnose-image - Diagnostic à partir d'une capture d'écran.
+
+        L'utilisateur envoie une photo/capture de son écran d'erreur (BSOD,
+        boîte de dialogue...) au lieu de devoir taper le code d'erreur à la
+        main. OCR pour extraire le texte, puis même chemin de diagnostic
+        qu'un symptôme tapé au clavier. Read-only — ne répare rien.
+        """
+        try:
+            from ai_core.screenshot_diagnosis import extract_text_from_image
+
+            body = self._read_body()
+            image_data = body.get("image", "")
+            lang = body.get("lang", "en")
+
+            if not image_data:
+                self._json_response({"status": "error", "error": "No image provided"}, status=400)
+                return
+
+            extracted_text = extract_text_from_image(image_data)
+            if extracted_text is None:
+                self._json_response({
+                    "status": "unavailable",
+                    "message": (
+                        "Screenshot diagnosis isn't available on this system "
+                        "(OCR engine not installed). Please describe the error in the chat instead."
+                        if lang != "fr" else
+                        "Le diagnostic par capture d'écran n'est pas disponible sur ce système "
+                        "(moteur OCR non installé). Décrivez l'erreur dans le chat à la place."
+                    ),
+                })
+                return
+
+            os_type = "windows"
+            if self._os_detector:
+                try:
+                    detected = self._os_detector.detect_all().detected_os
+                    if detected:
+                        os_type = detected[0].type
+                except Exception:
+                    pass
+
+            actions = self._repair_agent.diagnose(os_type, [extracted_text]) if self._repair_agent else []
+
+            self._json_response({
+                "status": "ok",
+                "extracted_text": extracted_text,
+                "os_type": os_type,
+                "suggested_fixes": [
+                    {"name": a.name, "description": a.description, "risk": a.risk.value}
+                    for a in actions
+                ],
+            })
+        except Exception as e:
+            self._json_response({"status": "error", "error": str(e)}, status=500)
 
     def _handle_repair(self):
         """POST /api/repair - Réparation.

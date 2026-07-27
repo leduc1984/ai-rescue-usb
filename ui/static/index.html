@@ -744,6 +744,10 @@
                         autofocus
                     />
                 </div>
+                <input type="file" id="screenshotInput" accept="image/*" style="display:none" onchange="handleScreenshotUpload(event)" />
+                <button class="btn btn-voice" id="screenshotBtn" onclick="document.getElementById('screenshotInput').click()" title="Upload a screenshot of the error">
+                    📷
+                </button>
                 <button class="btn btn-voice" id="voiceBtn" onclick="toggleVoice()" title="Talk to the AI">
                     🎤
                 </button>
@@ -1244,6 +1248,61 @@
 
         function closeModal() {
             document.getElementById('modal').classList.remove('active');
+        }
+
+        // ============================================
+        // Screenshot diagnosis — upload a photo of an error screen (BSOD,
+        // error dialog...) instead of typing the error code by hand.
+        // ============================================
+        async function handleScreenshotUpload(event) {
+            const file = event.target.files[0];
+            event.target.value = ''; // allow re-selecting the same file later
+            if (!file) return;
+
+            const fr = currentLang === 'fr';
+            addMessage(fr ? '📷 Capture d\'écran envoyée...' : '📷 Screenshot uploaded...', 'user');
+            addMessage('...', 'ai');
+            const thinkingMsg = document.querySelector('.chat-message.ai:last-child');
+
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/diagnose-image`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: reader.result, lang: currentLang }),
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'unavailable') {
+                        thinkingMsg.textContent = data.message;
+                        return;
+                    }
+                    if (data.status !== 'ok') {
+                        thinkingMsg.textContent = fr
+                            ? 'Erreur lors de l\'analyse de l\'image.'
+                            : 'Error analyzing the image.';
+                        return;
+                    }
+
+                    let msg = fr ? `**Texte détecté :** "${data.extracted_text}"\n\n` : `**Detected text:** "${data.extracted_text}"\n\n`;
+                    if (data.suggested_fixes && data.suggested_fixes.length) {
+                        msg += fr ? '**Réparations suggérées :**\n' : '**Suggested fixes:**\n';
+                        for (const f of data.suggested_fixes) {
+                            msg += `• ${f.description} (${f.risk})\n`;
+                        }
+                        msg += fr
+                            ? '\nDites **"répare mon PC"** pour démarrer la réparation guidée.'
+                            : '\nSay **"repair my PC"** to start the guided repair.';
+                    } else {
+                        msg += fr ? 'Aucune réparation spécifique suggérée.' : 'No specific fix suggested.';
+                    }
+                    thinkingMsg.innerHTML = formatMarkdown(msg);
+                } catch (e) {
+                    thinkingMsg.textContent = fr ? 'Erreur de connexion au serveur.' : 'Server connection error.';
+                }
+            };
+            reader.readAsDataURL(file);
         }
 
         // ============================================

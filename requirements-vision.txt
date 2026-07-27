@@ -1,0 +1,11 @@
+# Optional: screenshot diagnosis (upload a photo of an error screen) for
+# ai_core/screenshot_diagnosis.py. Without this, /api/diagnose-image
+# replies with a clear "not available" message — see README.
+#
+# pytesseract is just a thin Python wrapper: it also needs the Tesseract
+# OCR *binary* on PATH, which is a system package, not pip-installable:
+#   Windows: https://github.com/UB-Mannheim/tesseract/wiki
+#   Debian/Ubuntu: apt install tesseract-ocr
+#   Alpine (the ISO build): apk add tesseract-ocr
+pytesseract>=0.3.10
+Pillow>=10.0.0

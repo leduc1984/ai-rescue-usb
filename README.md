@@ -46,6 +46,19 @@ No terminals. No commands. No jargon. Just conversation.
 
 ---
 
+## 🔒 100% Local. Nothing Ever Leaves Your Machine.
+
+The AI in AI Rescue USB runs **entirely on your computer** — no cloud API, no account, no telemetry.
+
+- **The LLM is local.** A quantized model (Llama-3.2-3B or similar, GGUF format) runs on CPU via `llama.cpp`, right there on the USB stick. There's no API key to configure because there's no remote service to call.
+- **Your data never gets uploaded.** Diagnostics, file scans, screenshots you show the AI, the contents of your disks — none of it goes anywhere. The tool has no network dependency for its core function; internet is only ever used, optionally, to download an OS installer image.
+- **It works with no internet at all.** Unplug the network cable and it still repairs, backs up, and diagnoses — that's the whole point of an offline-first rescue tool.
+- **No accounts, no sign-up, no license server.** Boot it and use it.
+
+In an era where most AI assistants require sending your data to someone else's server, AI Rescue USB is built the other way: your computer's problems stay on your computer.
+
+---
+
 ## 🏗️ Architecture
 
 ```

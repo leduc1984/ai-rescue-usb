@@ -100,6 +100,7 @@ stage2_install_packages() {
         "hwinfo"
         "smartmontools"
         "hdparm" "nvme-cli"
+        "tesseract-ocr"  # screenshot diagnosis (photo of an error screen -> text)
 
         # Network
         "iproute2" "iw" "wpa_supplicant"
@@ -180,6 +181,7 @@ stage3_install_ai_rescue() {
     cp -r "$PROJECT_ROOT/ui" "$ISO_ROOT/opt/ai-rescue/"
     cp "$PROJECT_ROOT/requirements.txt" "$ISO_ROOT/opt/ai-rescue/"
     cp "$PROJECT_ROOT/requirements-llm.txt" "$ISO_ROOT/opt/ai-rescue/" 2>/dev/null || true
+    cp "$PROJECT_ROOT/requirements-vision.txt" "$ISO_ROOT/opt/ai-rescue/" 2>/dev/null || true
 
     # Local LLM model (opt-in: only if the builder pre-downloaded one into
     # models/ — see README. Without it, ai_core/engine.py runs rule-based.)
@@ -197,6 +199,10 @@ stage3_install_ai_rescue() {
     if [ -f "$ISO_ROOT/opt/ai-rescue/requirements-llm.txt" ]; then
         chroot "$ISO_ROOT" /usr/bin/pip3 install -r /opt/ai-rescue/requirements-llm.txt || \
             log_warn "llama-cpp-python failed to build — falling back to rule-based mode on this ISO"
+    fi
+    if [ -f "$ISO_ROOT/opt/ai-rescue/requirements-vision.txt" ]; then
+        chroot "$ISO_ROOT" /usr/bin/pip3 install -r /opt/ai-rescue/requirements-vision.txt || \
+            log_warn "pytesseract failed to install — screenshot diagnosis disabled on this ISO"
     fi
 
     # Copy configuration

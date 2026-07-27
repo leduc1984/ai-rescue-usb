@@ -479,19 +479,37 @@ class Executor:
     def __init__(self):
         self.history: list[dict] = []
 
-    async def execute(self, action: Action) -> dict:
-        """Exécute une action et retourne le résultat."""
+    async def execute(self, action: Action, confirm: bool = True) -> dict:
+        """Exécute une action et retourne le résultat.
+
+        `confirm=True` (défaut) bloque toute commande réelle MEDIUM+ risque
+        tant qu'elle n'a pas été explicitement confirmée par l'appelant —
+        sans ça, `action.requires_confirmation` était déclaré sur les Action
+        mais jamais vérifié nulle part, donc des commandes comme `bootrec`
+        ou `grub-install` s'exécutaient réellement sans aucune confirmation.
+        """
         log.info(f"Executing: {action.description}")
 
         start_time = time.time()
 
         try:
-            if action.command:
+            if action.requires_confirmation and action.risk in (
+                RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.DESTRUCTIVE
+            ) and confirm:
+                result = {
+                    "success": False,
+                    "action": action.description,
+                    "error": "Confirmation requise",
+                    "requires_confirmation": True,
+                }
+            elif action.command:
                 result = await self._run_command(action.command, action.timeout)
             else:
                 result = {"success": True, "output": "Action symbolique exécutée"}
 
+            result.setdefault("action", action.description)
             elapsed = time.time() - start_time
+            result.setdefault("time", elapsed)
             self.history.append({
                 "action": action.description,
                 "success": result.get("success", False),
@@ -502,7 +520,7 @@ class Executor:
 
         except Exception as e:
             log.error(f"Action failed: {e}")
-            return {"success": False, "error": str(e), "time": time.time() - start_time}
+            return {"success": False, "action": action.description, "error": str(e), "time": time.time() - start_time}
 
     async def _run_command(self, command: str, timeout: int) -> dict:
         """Exécute une commande shell avec timeout."""
@@ -565,10 +583,15 @@ class AIRescueCore:
         self.executor = Executor()
         self.verifier = Verifier()
 
-    async def process(self, user_input: str) -> dict:
+    async def process(self, user_input: str, confirm: bool = True) -> dict:
         """
         Point d'entrée principal.
         Transforme une demande en actions exécutées.
+
+        `confirm=True` (défaut) : les actions à risque MEDIUM+ ne s'exécutent
+        pas réellement, elles reviennent comme "confirmation requise" — voir
+        Executor.execute(). Ne passer confirm=False qu'après confirmation
+        explicite de l'utilisateur pour CES actions précises.
         """
         log.info(f"Processing: {user_input}")
 
@@ -583,7 +606,7 @@ class AIRescueCore:
         # Étape 3: Exécution
         results = []
         for action in actions:
-            result = await self.executor.execute(action)
+            result = await self.executor.execute(action, confirm=confirm)
             results.append(result)
 
             # Arrêter si une action échoue et qu'elle est critique
