@@ -384,6 +384,75 @@
             50% { box-shadow: 0 0 12px var(--success); }
         }
 
+        .btn-tech-toggle {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: var(--font);
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .btn-tech-toggle:hover {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+
+        .btn-tech-toggle.active {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        /* ============================================
+           Technical panel (live backend log)
+           ============================================ */
+        .tech-panel {
+            display: none;
+            background: #050507;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .tech-panel.active {
+            display: block;
+        }
+
+        .tech-panel-log {
+            font-family: 'Cascadia Code', 'Consolas', 'SF Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #7dffb3;
+            padding: 12px 16px;
+            max-height: 220px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .tech-panel-log .log-line {
+            opacity: 0.85;
+        }
+
+        .tech-panel-log .log-line.WARNING {
+            color: var(--warning);
+        }
+
+        .tech-panel-log .log-line.ERROR {
+            color: var(--danger);
+        }
+
+        .tech-panel-log:empty::before {
+            content: 'En attente d\'activité du système...';
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
         /* ============================================
            Progress modal
            ============================================ */
@@ -554,6 +623,17 @@
                 <span id="statusText">Système prêt</span>
             </div>
             <span id="hwSummary">Analyse en cours...</span>
+            <button class="btn-tech-toggle" id="techToggle" onclick="toggleTechPanel()" title="Voir ce que le système fait réellement, en direct">
+                🖥️ Détails techniques
+            </button>
+        </div>
+
+        <!-- Technical panel: live backend log, so the user can see every real
+             action taken (commands run, detections, confirmations needed),
+             not just the AI's summarized chat answer. Collapsed by default
+             to keep the main UI simple. -->
+        <div class="tech-panel" id="techPanel">
+            <div class="tech-panel-log" id="techLog"></div>
         </div>
 
         <!-- Action cards -->
@@ -652,6 +732,7 @@
         let isRecording = false;
         let mediaRecorder = null;
         let audioChunks = [];
+        let lastLogId = 0;
 
         // ============================================
         // Initialization
@@ -660,6 +741,8 @@
             createParticles();
             await checkStatus();
             updateGreeting();
+            pollLogs();
+            setInterval(pollLogs, 1500);
         }
 
         function createParticles() {
@@ -708,6 +791,43 @@
                 document.getElementById('statusText').textContent = 'Connexion au système...';
                 document.getElementById('hwSummary').textContent = 'Détection en cours...';
                 document.querySelector('.status-dot').style.background = 'var(--warning)';
+            }
+        }
+
+        // ============================================
+        // Technical panel — live backend activity log
+        // ============================================
+        function toggleTechPanel() {
+            const panel = document.getElementById('techPanel');
+            const btn = document.getElementById('techToggle');
+            panel.classList.toggle('active');
+            btn.classList.toggle('active');
+        }
+
+        async function pollLogs() {
+            try {
+                const response = await fetch(`${API_BASE}/logs?since=${lastLogId}`);
+                if (!response.ok) return;
+                const data = await response.json();
+                lastLogId = data.last_id;
+
+                if (data.entries && data.entries.length) {
+                    const logEl = document.getElementById('techLog');
+                    for (const entry of data.entries) {
+                        const levelMatch = entry.line.match(/\[(WARNING|ERROR)\]/);
+                        const div = document.createElement('div');
+                        div.className = 'log-line' + (levelMatch ? ' ' + levelMatch[1] : '');
+                        div.textContent = entry.line;
+                        logEl.appendChild(div);
+                    }
+                    // Garder un historique borné côté navigateur
+                    while (logEl.childNodes.length > 300) {
+                        logEl.removeChild(logEl.firstChild);
+                    }
+                    logEl.scrollTop = logEl.scrollHeight;
+                }
+            } catch (e) {
+                // Le serveur backend n'est pas joignable (mode démo statique) — silencieux.
             }
         }
 

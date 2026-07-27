@@ -6,10 +6,13 @@ Tourne sur le port 8080.
 """
 
 import asyncio
+import itertools
 import json
 import logging
 import os
 import sys
+import threading
+from collections import deque
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
@@ -17,7 +20,51 @@ from urllib.parse import urlparse, parse_qs
 # Ajouter le projet au path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+# Configuré ici (pas dans `if __name__ == "__main__"`) car ce module attache
+# LogBuffer au root logger juste en dessous — basicConfig() ne fait rien si
+# le root a déjà un handler, donc on doit garantir la sortie console d'abord.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
 log = logging.getLogger("ui-server")
+
+
+class LogBuffer(logging.Handler):
+    """Capture tous les logs (détection, réparation, conversation, sécurité...)
+    dans un buffer en mémoire que l'interface peut consulter en direct.
+
+    C'est ce qui alimente le panneau "détails techniques" du chat : le client
+    voit les vraies commandes/actions exécutées en arrière-plan, pas juste la
+    réponse résumée de l'IA.
+    """
+
+    def __init__(self, maxlen: int = 500):
+        super().__init__()
+        self._entries = deque(maxlen=maxlen)
+        self._counter = itertools.count(1)
+        self._lock = threading.Lock()
+        self.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+                                             datefmt="%H:%M:%S"))
+
+    def emit(self, record):
+        try:
+            line = self.format(record)
+        except Exception:
+            return
+        with self._lock:
+            self._entries.append((next(self._counter), line))
+
+    def since(self, last_id: int):
+        with self._lock:
+            entries = [(i, line) for i, line in self._entries if i > last_id]
+        return entries
+
+
+log_buffer = LogBuffer()
+logging.getLogger().addHandler(log_buffer)
+logging.getLogger().setLevel(logging.INFO)
 
 # Imports résilients — le serveur démarre même sans les déps Linux
 try:
@@ -108,6 +155,8 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
             self._handle_hardware()
         elif path == "/api/os":
             self._handle_os()
+        elif path == "/api/logs":
+            self._handle_logs(parse_qs(parsed.query))
         elif path == "/" or path == "":
             self._serve_static("/index.html")
         else:
@@ -212,6 +261,24 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
     # ============================================
     # API Handlers
     # ============================================
+
+    def _handle_logs(self, query: dict):
+        """GET /api/logs?since=N - Journal technique en direct (polling).
+
+        Le client renvoie le dernier id qu'il a reçu ; on ne renvoie que les
+        lignes plus récentes, pour éviter de retransmettre tout l'historique
+        à chaque poll.
+        """
+        try:
+            since = int(query.get("since", ["0"])[0])
+        except (ValueError, IndexError):
+            since = 0
+
+        entries = log_buffer.since(since)
+        self._json_response({
+            "entries": [{"id": i, "line": line} for i, line in entries],
+            "last_id": entries[-1][0] if entries else since,
+        })
 
     def _handle_status(self):
         """GET /api/status - État rapide du système."""
@@ -430,8 +497,4 @@ def run_server(host=None, port=8080):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-    )
     run_server()
