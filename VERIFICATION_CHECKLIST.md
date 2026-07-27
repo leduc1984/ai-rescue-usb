@@ -1,4 +1,9 @@
-# AI RESCUE USB - Vérification Complète
+# AI RESCUE USB - Inventaire du code
+
+> **Note :** ce document liste le code qui a été **écrit** pour chaque phase, pas ce qui a été **testé**.
+> À ce stade, il n'y a pas de suite de tests automatisés couvrant ces modules (à l'exception de
+> `tests/test_security_manager.py`), et l'ISO n'a pas encore été construite ni bootée sur une
+> machine réelle ou virtuelle. Un ✅ ci-dessous veut dire "le code existe", pas "c'est vérifié".
 
 ## 📋 Checklist par Phase
 
@@ -233,7 +238,7 @@ Ordinateur prêt à redémarrer.
 | **Agents spécialisés** | 5 (Repair, Install, Backup, Recovery, Driver*) |
 | **Niveaux sécurité** | 5 (SAFE → DESTRUCTIVE) |
 | **Détection matériel** | 10+ catégories |
-| **Phases complètes** | 14/15 (93%) |
+| **Phases avec code écrit** | 14/15 |
 
 ---
 
@@ -270,37 +275,33 @@ python ai_core/main.py
 
 ## ✅ Conclusion
 
-**AI Rescue USB est fonctionnel à 95%**
+**Le code de la plupart des flux décrits ci-dessus existe et s'importe sans erreur**, mais rien
+de tout ça n'a encore été validé de bout en bout : pas d'ISO construite, pas de boot testé (réel
+ou VM), pas de suite de tests automatisés au-delà de `security/security_manager.py`.
 
-### Ce qui marche :
-- ✅ Boot USB (scripts prêts)
-- ✅ Interface utilisateur moderne
-- ✅ Intelligence IA (rule-based + LLM ready)
-- ✅ Détection matériel complète
-- ✅ Détection OS multi-plateforme
-- ✅ Réparation Windows/Linux/BSD
-- ✅ Installation 9 systèmes
-- ✅ Sauvegarde/restauration
-- ✅ Récupération fichiers
-- ✅ Sécurité avec confirmations
-- ✅ Système conversationnel interactif
-- ✅ Support vocale (structure prête)
+### Code écrit :
+- ✅ Scripts de build (Alpine, ISO) — jamais exécutés de bout en bout
+- ✅ Interface web
+- ✅ Moteur de conversation (rule-based + intégration LLM prévue)
+- ✅ Détection matériel / OS
+- ✅ Agents réparation Windows/Linux/BSD
+- ✅ Agent installation (9 OS), sauvegarde, récupération
+- ✅ Sécurité avec niveaux de risque + confirmation (seule partie avec tests automatisés)
 
-### Ce qui manque (5%) :
-- ⚠️ Agent pilotes (driver_agent.py)
-- ⚠️ Modèles LLM locaux à télécharger
-- ⚠️ Whisper.cpp à compiler
-- ⚠️ Piper TTS à configurer
-- ⚠️ Answer files Windows pour installation auto
+### Ce qui manque ou reste à faire :
+- ⚠️ Agent pilotes (driver_agent.py) — jamais implémenté
+- ⚠️ Modèles LLM locaux à télécharger et intégrer réellement
+- ⚠️ Whisper.cpp / Piper TTS — non compilés, non intégrés
+- ⚠️ Installation Windows sans interaction (answer files)
+- ⚠️ Tests automatisés sur le reste des modules (detection, agents, conversation)
 
-### Prochaines étapes :
-1. Tester sur machine réelle avec Alpine Linux
-2. Créer l'ISO bootable
-3. Tester sur clé USB
-4. Intégrer les modèles LLM
-5. Développer driver_agent.py
-6. Ajouter réponse vocale complète
+### Prochaines étapes concrètes :
+1. Construire l'ISO une première fois et documenter ce qui fonctionne réellement
+2. Tester le boot en VM (QEMU) avant tout test sur machine réelle
+3. Étendre les tests automatisés au-delà de `security_manager.py`
+4. Intégrer un vrai modèle LLM local et vérifier le fallback rule-based
+5. Développer l'agent pilotes
 
 ---
 
-**Statut : PRÊT POUR TESTS RÉELS** 🚀
+**Statut réel : prototype de code, pas encore testé de bout en bout.**

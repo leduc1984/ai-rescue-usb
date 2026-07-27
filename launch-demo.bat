@@ -28,9 +28,11 @@ if %errorlevel% neq 0 (
 echo     [1/3] Vérification des dépendances...
 pip install -r requirements.txt --quiet 2>nul
 if %errorlevel% neq 0 (
-    echo     [!] Certaines dépendances n'ont pas pu être installées (llama-cpp nécessite un compilateur C).
+    echo     [!] Certaines dépendances n'ont pas pu être installées.
     echo     Le mode démo fonctionnera quand même avec le fallback intégré.
 )
+echo     [i] Pour le LLM local (optionnel, nécessite un compilateur C) :
+echo         pip install -r requirements-llm.txt
 
 :: Start web server
 echo     [2/3] Démarrage du serveur web...

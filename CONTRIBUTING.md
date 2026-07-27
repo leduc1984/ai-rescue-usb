@@ -6,7 +6,6 @@ This guide explains how to develop, test, and build AI Rescue USB from source.
 
 ### Required
 - **Python 3.11+** with pip
-- **Node.js 18+** with npm
 - **Git**
 
 ### For Building ISO
@@ -21,34 +20,27 @@ This guide explains how to develop, test, and build AI Rescue USB from source.
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/yourusername/ai-rescue-usb.git
+git clone https://github.com/leduc1984/ai-rescue-usb.git
 cd ai-rescue-usb
 ```
 
 ### 2. Install Python Dependencies
 ```bash
 pip install -r requirements.txt
+
+# Optional: local LLM support (needs a C/C++ compiler toolchain)
+pip install -r requirements-llm.txt
 ```
 
-### 3. Install Node Dependencies (for UI)
-```bash
-cd ui
-npm install
-cd ..
-```
-
-### 4. Run Development Server
+### 3. Run Development Server
 ```bash
 # This starts the web UI on http://localhost:8080
 python ui/server.py
 ```
 
-### 5. Test the Conversation System
+### 4. Test the Conversation System
 ```bash
-# Run verification tests
-python C:/Users/Leduc/AppData/Local/Temp/hermes-verify-conversation.py
-
-# You should see: ✅ ALL 10/10 CHECKS PASSED
+python -m pytest tests/
 ```
 
 ## Architecture Overview
@@ -67,8 +59,8 @@ ai-rescue-usb/
 │       ├── recovery_flow.py
 │       └── diagnose_flow.py
 ├── agents/                     # Specialized agents
-│   ├── repair_agent.py
-│   └── driver_agent.py
+│   ├── repair/repair_agent.py
+│   └── driver_installer.py
 ├── detection/                  # Hardware/OS detection
 │   ├── hardware/
 │   └── os/
@@ -85,11 +77,7 @@ ai-rescue-usb/
 
 ### Unit Tests
 ```bash
-# Test conversation system
 python -m pytest tests/
-
-# Or run specific verification
-python C:/Users/Leduc/AppData/Local/Temp/hermes-verify-*.py
 ```
 
 ### Integration Test with QEMU
@@ -362,10 +350,9 @@ python -m pytest tests/ -v
 - [Alpine Linux Docs](https://wiki.alpinelinux.org/)
 - [QEMU Documentation](https://www.qemu.org/docs/master/)
 - [Python Logging](https://docs.python.org/3/library/logging.html)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
 
 ---
 
 **Happy coding! 🚀**
 
-For questions, open an issue on GitHub or join our Discord community.
+For questions, open an [issue](https://github.com/leduc1984/ai-rescue-usb/issues) or start a [discussion](https://github.com/leduc1984/ai-rescue-usb/discussions) on GitHub.

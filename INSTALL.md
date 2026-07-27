@@ -2,74 +2,45 @@
 
 This guide explains how to create and use your AI Rescue USB drive.
 
-## Quick Start (5 minutes)
+## Current Status
+
+**There is no pre-built ISO release yet.** The project is in active development — see the
+[README](README.md) for status. To try it today, you build the ISO from source. This guide
+will be updated with a simple download-and-flash flow once a release exists.
+
+## Quick Start (build from source)
 
 ### What You Need
 - USB drive (8GB or larger)
-- Computer with internet (for downloading)
+- Docker (recommended) or the tools listed in [CONTRIBUTING.md](CONTRIBUTING.md)
 - Target computer (to rescue)
 
-### Step 1: Download
-
-Download the latest release from our website:
+### Step 1: Build the ISO
 
 ```bash
-# Download ISO (2.5GB)
-wget https://github.com/yourusername/ai-rescue-usb/releases/latest/download/ai-rescue-usb.iso
-
-# Verify integrity
-sha256sum ai-rescue-usb.iso
-# Compare with checksum on website
+git clone https://github.com/leduc1984/ai-rescue-usb.git
+cd ai-rescue-usb
+./build-all.sh
 ```
 
-**Alternative download methods:**
-- Direct from website: [ai-rescue-usb.github.io](https://ai-rescue-usb.github.io)
-- GitHub releases: [Latest release](https://github.com/yourusername/ai-rescue-usb/releases)
-- Torrent: [Torrent file](https://ai-rescue-usb.github.io/torrent)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the build details and what to do if it fails —
+this hasn't been verified end-to-end on real hardware yet, so expect rough edges.
 
 ### Step 2: Flash to USB
 
+**On Linux/macOS:**
+```bash
+sudo ./flash-usb-linux.sh
+```
+
 **On Windows:**
 ```powershell
-# Option A: Use our flasher (easiest)
-1. Download flash-windows.exe from website
-2. Run as Administrator
-3. Select your USB drive
-4. Click "Flash" and wait
-
-# Option B: Use Rufus
-1. Download Rufus from https://rufus.akeo.ie/
-2. Select ai-rescue-usb.iso
-3. Select your USB drive
-4. Click "START"
+flash-usb-windows.bat
 ```
 
-**On Linux:**
-```bash
-# Option A: Use our script
-1. Download flash-linux.sh from website
-2. Make executable: chmod +x flash-linux.sh
-3. Run: sudo ./flash-linux.sh
-
-# Option B: Use dd directly
-1. Find your USB: lsblk
-2. Flash (replace /dev/sdX): 
-   sudo dd if=ai-rescue-usb.iso of=/dev/sdX bs=4M status=progress
-   sudo sync
-```
-
-**On macOS:**
-```bash
-# Option A: Use our script
-1. Download flash-macos.sh from website
-2. Make executable: chmod +x flash-macos.sh
-3. Run: sudo ./flash-macos.sh
-
-# Option B: Use dd directly
-1. Find your USB: diskutil list
-2. Unmount: diskutil unmountDisk /dev/diskN
-3. Flash: sudo dd if=ai-rescue-usb.iso of=/dev/rdiskN bs=4m
-```
+Both scripts are in the repo root and write the ISO built in Step 1 to a USB drive you select.
+Alternatively, use [Rufus](https://rufus.ie) (Windows) or [BalenaEtcher](https://www.balena.io/etcher/)
+(any OS) and point it at the ISO in `build/`.
 
 ### Step 3: Boot from USB
 
@@ -105,153 +76,84 @@ That's it! The AI handles everything else.
 
 ## Detailed Instructions
 
-### Verifying Download Integrity
+### Verifying the Build
 
-Always verify your download to ensure it wasn't corrupted:
+After `./build-all.sh` completes, it prints a SHA256 checksum for the ISO it produced.
+Save that checksum if you plan to flash the same ISO onto multiple drives, so you can confirm
+later that a copy wasn't corrupted:
 
 ```bash
 # Linux/macOS
-sha256sum ai-rescue-usb.iso
-# Compare output with checksum on website
+sha256sum build/ai-rescue-usb.iso
 
 # Windows (PowerShell)
-Get-FileHash ai-rescue-usb.iso -Algorithm SHA256
-# Compare output with checksum on website
+Get-FileHash build\ai-rescue-usb.iso -Algorithm SHA256
 ```
 
 ### Creating USB on Different Operating Systems
 
-#### Windows (Detailed)
+#### Windows
 
-**Method 1: AI Rescue USB Flasher (Recommended)**
-```
-1. Download flash-windows.exe from website
-2. Right-click → Run as Administrator
-3. Select your USB drive from the list
-   ⚠️ WARNING: This will erase ALL data on the USB!
-4. Click "Flash"
-5. Wait 5-10 minutes
-6. When done, click "Exit"
-7. Your USB is ready to use!
+**Option 1: repo script**
+```powershell
+flash-usb-windows.bat
 ```
 
-**Method 2: Rufus**
+**Option 2: Rufus**
 ```
-1. Download Rufus: https://rufus.akeo.ie/
+1. Download Rufus: https://rufus.ie
 2. Insert USB drive
 3. Open Rufus
 4. Under "Device", select your USB drive
-5. Under "Boot selection", click "SELECT" and choose ai-rescue-usb.iso
+5. Under "Boot selection", click "SELECT" and choose build\ai-rescue-usb.iso
 6. Leave other settings as default
 7. Click "START"
 8. If prompted, choose "Write in ISO Image mode"
 9. Wait for completion (5-10 minutes)
-10. Click "CLOSE"
 ```
 
-**Method 3: BalenaEtcher**
-```
-1. Download BalenaEtcher: https://www.balena.io/etcher/
-2. Install and open Etcher
-3. Click "Flash from file" → select ai-rescue-usb.iso
-4. Click "Select target" → choose your USB drive
-5. Click "Flash!"
-6. Wait for completion
-7. Your USB is ready!
-```
+#### Linux
 
-#### Linux (Detailed)
-
-**Method 1: AI Rescue USB Flasher (Recommended)**
+**Option 1: repo script**
 ```bash
-# Download script
-wget https://ai-rescue-usb.github.io/flash-linux.sh
-
-# Make executable
-chmod +x flash-linux.sh
-
-# Run (requires root)
-sudo ./flash-linux.sh
-
-# Follow the prompts:
-# 1. Select your USB drive from the list
-# 2. Confirm you want to erase it
-# 3. Wait for flashing to complete
-# 4. Script will tell you when done
+sudo ./flash-usb-linux.sh
 ```
 
-**Method 2: DD Command (Advanced)**
+**Option 2: dd (manual)**
 ```bash
 # 1. Find your USB drive
 lsblk
-# Look for your USB (e.g., /dev/sdb)
-# ⚠️ Make sure you select the RIGHT drive!
+# Look for your USB (e.g., /dev/sdb) — make sure you select the RIGHT drive!
 
 # 2. Unmount the USB (if mounted)
 sudo umount /dev/sdX*
-# Replace X with your drive letter
 
 # 3. Flash the ISO
-sudo dd if=ai-rescue-usb.iso of=/dev/sdX bs=4M status=progress conv=fsync
-# This takes 5-10 minutes
-
-# 4. Sync and verify
+sudo dd if=build/ai-rescue-usb.iso of=/dev/sdX bs=4M status=progress conv=fsync
 sudo sync
-
-# 5. Your USB is ready!
 ```
 
-**Method 3: GNOME Disks (GUI)**
-```
-1. Open "Disks" application
-2. Select your USB drive
-3. Click menu (⋮) → "Restore Disk Image"
-4. Select ai-rescue-usb.iso
-5. Click "Start Restoring"
-6. Wait for completion
-```
+#### macOS
 
-#### macOS (Detailed)
+No dedicated script yet — use dd or a GUI tool:
 
-**Method 1: AI Rescue USB Flasher (Recommended)**
-```bash
-# Download script
-curl -O https://ai-rescue-usb.github.io/flash-macos.sh
-
-# Make executable
-chmod +x flash-macos.sh
-
-# Run
-sudo ./flash-macos.sh
-
-# Follow prompts to select USB and flash
-```
-
-**Method 2: DD Command**
 ```bash
 # 1. Find your USB drive
 diskutil list
-# Look for your USB (e.g., /dev/disk2)
-# ⚠️ Make sure you select the RIGHT drive!
+# Look for your USB (e.g., /dev/disk2) — make sure you select the RIGHT drive!
 
 # 2. Unmount the USB
 diskutil unmountDisk /dev/diskN
-# Replace N with your disk number
 
 # 3. Flash the ISO (use rdiskN for faster writes)
-sudo dd if=ai-rescue-usb.iso of=/dev/rdiskN bs=4m
-# This takes 5-10 minutes
+sudo dd if=build/ai-rescue-usb.iso of=/dev/rdiskN bs=4m
 
 # 4. Eject
 diskutil eject /dev/diskN
-
-# 5. Your USB is ready!
 ```
 
-**Method 3: BalenaEtcher**
-```
-Same as Windows Method 3 above
-```
+Or use [BalenaEtcher](https://www.balena.io/etcher/): Flash from file → select the ISO →
+select your USB drive → Flash.
 
 ### Booting from USB
 
@@ -391,29 +293,12 @@ Just type your request in the chat box:
    - Avoid USB hubs
 
 4. **Re-flash USB**
-   - Download ISO again
-   - Flash with different method (Rufus, Etcher, etc.)
+   - Rebuild the ISO (`./build-all.sh`) in case the build was incomplete
+   - Flash with a different method (Rufus, Etcher, etc.)
 
 5. **Try different USB drive**
    - Some drives don't work well
    - Use name brand (SanDisk, Kingston, etc.)
-
-### ISO Download Failed
-
-**Problem:** Download interrupted or corrupted
-
-**Solutions:**
-1. **Use download manager**
-   - wget, curl, or browser with resume
-   - Example: `wget -c https://...`
-
-2. **Verify checksum**
-   - Compare SHA256 with website
-   - If mismatch, download again
-
-3. **Try different mirror**
-   - Website, GitHub, torrent
-   - Torrent is most reliable for large files
 
 ### Flash Failed
 
@@ -523,7 +408,11 @@ A: Yes, 100% free and open source. No hidden costs, no subscriptions.
 A: Any x86_64 computer (Intel/AMD) from 2005 or newer. Works with BIOS or UEFI.
 
 **Q: Can I use it on a Mac?**  
-A: Intel Macs: Yes. Apple Silicon (M1/M2/M3): Not yet (coming in v2.0).
+A: Intel Macs: planned. Apple Silicon (M1/M2/M3): not planned yet — see the [README roadmap](README.md).
+
+> The timings and behavior above describe the intended design. Since the ISO hasn't been
+> tested end-to-end on real hardware yet, treat them as goals rather than measured results
+> until this note is removed.
 
 ---
 
@@ -533,12 +422,9 @@ If you're stuck:
 
 1. **Read this guide** - Most questions answered here
 2. **Check FAQ** - Common issues and solutions
-3. **GitHub Issues** - Report bugs or ask questions
-4. **Discord Community** - Real-time help from users
-5. **Email Support** - support@ai-rescue-usb.github.io
+3. **[GitHub Issues](https://github.com/leduc1984/ai-rescue-usb/issues)** - Report bugs or ask questions
+4. **[GitHub Discussions](https://github.com/leduc1984/ai-rescue-usb/discussions)** - Ideas and questions
 
 ---
 
 **Good luck! 🚀**
-
-With AI Rescue USB, you're never more than a USB stick away from computer rescue.

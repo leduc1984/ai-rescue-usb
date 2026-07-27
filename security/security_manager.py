@@ -16,6 +16,16 @@ from typing import Callable, Optional
 log = logging.getLogger("security")
 
 
+def _resolve_audit_log_path() -> Path:
+    """Use /var/log on the live rescue system; fall back to a local logs/ dir elsewhere (e.g. dev machines, Windows)."""
+    var_log = Path("/var/log/ai-rescue-audit.log")
+    if var_log.parent.is_dir() and os.access(var_log.parent, os.W_OK):
+        return var_log
+    fallback_dir = Path(__file__).resolve().parent.parent / "logs"
+    fallback_dir.mkdir(parents=True, exist_ok=True)
+    return fallback_dir / "ai-rescue-audit.log"
+
+
 class OperationRisk(Enum):
     """Niveaux de risque d'une opération."""
     SAFE = 1        # Lecture seule
@@ -45,7 +55,7 @@ class SecurityManager:
 
     def __init__(self):
         self.confirmed_operations: set = set()
-        self.audit_log_path = Path("/var/log/ai-rescue-audit.log")
+        self.audit_log_path = _resolve_audit_log_path()
         self.dry_run = False
         self.require_confirmation_for = [
             OperationRisk.MEDIUM,

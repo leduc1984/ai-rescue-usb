@@ -23,10 +23,20 @@ from typing import Any, Callable, Optional
 # ============================================================
 # Logging setup
 # ============================================================
+def _resolve_log_path() -> Path:
+    """Use /var/log on the live rescue system; fall back to a local logs/ dir elsewhere (e.g. dev machines, Windows)."""
+    var_log = Path("/var/log/ai-rescue.log")
+    if var_log.parent.is_dir() and os.access(var_log.parent, os.W_OK):
+        return var_log
+    fallback_dir = Path(__file__).resolve().parent.parent / "logs"
+    fallback_dir.mkdir(parents=True, exist_ok=True)
+    return fallback_dir / "ai-rescue.log"
+
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[logging.StreamHandler(), logging.FileHandler("/var/log/ai-rescue.log")],
+    handlers=[logging.StreamHandler(), logging.FileHandler(_resolve_log_path())],
 )
 log = logging.getLogger("ai-rescue")
 

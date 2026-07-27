@@ -1,11 +1,11 @@
 # AI Rescue USB
-# Le technicien informatique universel dans une clé USB
-# Version 1.0.0
+# An AI assistant that helps people repair, recover, and install operating
+# systems from a bootable USB key — currently in active development.
 
 [project]
 name = "ai-rescue-usb"
-version = "1.0.0"
-description = "Clé USB bootable universelle avec IA pour sauver, réparer, installer et configurer n'importe quel ordinateur"
+version = "0.1.0"
+description = "Clé USB bootable avec assistant IA pour diagnostiquer, réparer, sauvegarder et installer des systèmes d'exploitation"
 authors = ["AI Rescue Team"]
 
 [build]

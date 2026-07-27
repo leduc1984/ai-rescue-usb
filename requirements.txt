@@ -1,44 +1,15 @@
 # AI Rescue USB - Dependencies
-# Minimal footprint for USB deployment
-
-# Core AI
-llama-cpp-python==0.2.100
-numpy==1.24.3
+# Only packages actually imported by the code today. Hardware/disk/network
+# tools (lspci, lsblk, parted, wget, testdisk, photorec, ddrescue, chntpw,
+# clamav, ...) are invoked as system CLI commands via subprocess, not as
+# pip packages — they must be present on the live boot system's PATH.
 
 # Hardware detection
 psutil==5.9.6
-pyudev==0.24.1
-distro==1.8.0
-
-# Filesystem operations
-parted==0.1.2
-pyudev==0.24.1
-
-# Image handling
-Pillow==10.0.0
-
-# TTY UI
-rich==13.5.0
-prompt-toolkit==3.0.41
-
-# Security
-cryptography==41.0.3
-
-# Download
-requests==2.31.0
-tqdm==4.66.1
-
-# Hardware info
-lspci==0.1
-usb==1.0.0a2
-
-# Bootloader
-pyinstaller==5.13.0
 
 # Testing
 pytest==7.4.0
 pytest-cov==4.1.0
 
-# Docs
-mkdocs==1.5.3
-mkdocs-material==9.4.0
+# Local LLM support is optional — see requirements-llm.txt. The engine
+# falls back to a rule-based mode when it isn't installed.

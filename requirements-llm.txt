@@ -1,0 +1,5 @@
+# Optional: local LLM support for ai_core/engine.py.
+# Requires a C/C++ compiler toolchain to build (compiles llama.cpp from
+# source unless a prebuilt wheel matches your platform/Python version).
+# Without this installed, the engine falls back to rule-based responses.
+llama-cpp-python>=0.3.0,<0.4.0

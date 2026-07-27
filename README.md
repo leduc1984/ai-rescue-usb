@@ -161,12 +161,16 @@ cd ai-rescue-usb
 # Install dependencies
 pip install -r requirements.txt
 
+# Optional: local LLM support (needs a C/C++ compiler toolchain).
+# Skip this and the engine falls back to rule-based mode.
+pip install -r requirements-llm.txt
+
 # Run the UI locally
 python ui/server.py
 # Open http://localhost:8080
 
 # Run tests
-python hermes-verify-*.py
+python -m pytest tests/
 ```
 
 See [INSTALL.md](INSTALL.md) for building the bootable ISO.

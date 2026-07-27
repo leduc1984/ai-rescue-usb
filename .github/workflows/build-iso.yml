@@ -62,7 +62,7 @@ jobs:
           body: |
             ## 🤖 AI Rescue USB ${{ github.ref_name }}
 
-            Le technicien informatique universel dans une clé USB.
+            Assistant IA pour réparation, sauvegarde et installation de systèmes d'exploitation.
 
             ### 📥 Téléchargement
             - **ISO** : `ai-rescue-usb-1.0.0-x86_64.iso`
