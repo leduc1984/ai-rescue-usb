@@ -59,6 +59,7 @@ class ConversationContext:
     flow_step: int = 0
     collected_data: dict = field(default_factory=dict)
     history: list = field(default_factory=list)
+    lang: str = "en"
 
 
 class ConversationManager:
@@ -151,7 +152,7 @@ class ConversationManager:
         if self.on_state_change:
             self.on_state_change(old_state, new_state)
 
-    async def process_user_input(self, user_input: str, is_voice: bool = False) -> str:
+    async def process_user_input(self, user_input: str, is_voice: bool = False, lang: str = "en") -> str:
         """
         Traite l'entrée utilisateur (texte ou voix).
         Retourne la réponse de l'IA.
@@ -160,7 +161,13 @@ class ConversationManager:
         - Sinon → détecter intention
           - Si intention connue → démarrer le flux correspondant
           - Sinon → assistant universel (répond à TOUT)
+
+        `lang` ("en" par défaut, ou "fr") ne couvre pour l'instant que
+        l'assistant universel — les flux guidés (install/repair/backup/...)
+        restent en français, les traduire est un chantier séparé.
         """
+        lang = lang if lang in ("en", "fr") else "en"
+        self.context.lang = lang
         log.info(f"User input: {user_input[:100]}...")
 
         # Enregistrer dans l'historique
@@ -200,13 +207,13 @@ class ConversationManager:
                     if flow_started:
                         response = await self.current_flow.start(user_input)
                     else:
-                        response = self.universal.answer(user_input)
+                        response = self.universal.answer(user_input, lang=lang)
                 else:
                     # Flux non disponible, utiliser l'assistant universel
-                    response = self.universal.answer(user_input)
+                    response = self.universal.answer(user_input, lang=lang)
             else:
                 # Pas d'intention de flux → assistant universel
-                response = self.universal.answer(user_input)
+                response = self.universal.answer(user_input, lang=lang)
 
         # Callback
         if self.on_ai_response:
@@ -235,8 +242,12 @@ class ConversationManager:
 
         # === INTENTIONS MÉTIER (priorité haute) ===
 
-        # Installation
-        if any(w in inp for w in ["installe", "install", "windows", "linux", "ubuntu"]):
+        # Installation — nécessite un verbe d'installation explicite. Un simple
+        # "windows"/"linux"/"ubuntu" ne suffit pas : ces mots apparaissent aussi
+        # dans des phrases de réparation/diagnostic ("mon Windows ne démarre
+        # plus"), qui aiguillaient alors à tort vers "quel OS installer ?" —
+        # dangereux vu que l'install efface le disque cible.
+        if any(w in inp for w in ["installe", "install", "réinstalle", "reinstall"]):
             return IntentType.INSTALL_OS
 
         # Réparation

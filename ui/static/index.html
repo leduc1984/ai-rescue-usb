@@ -91,6 +91,51 @@
         .header {
             text-align: center;
             padding: 40px 20px 20px;
+            position: relative;
+        }
+
+        .lang-switch {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-family: var(--font);
+            padding: 5px 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            color: var(--text);
+        }
+
+        .lang-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+            .lang-switch {
+                position: static;
+                justify-content: center;
+                margin-bottom: 12px;
+                width: fit-content;
+                margin-left: auto;
+                margin-right: auto;
+            }
         }
 
         .logo {
@@ -608,23 +653,27 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
+            <div class="lang-switch">
+                <button class="lang-btn active" id="langBtnEn" onclick="setLanguage('en')">English</button>
+                <button class="lang-btn" id="langBtnFr" onclick="setLanguage('fr')">Français</button>
+            </div>
             <span class="logo">🤖</span>
             <h1 class="title">AI Rescue USB</h1>
-            <p class="subtitle">Assistant IA pour réparation, sauvegarde et installation — Prototype</p>
+            <p class="subtitle" id="subtitle">AI assistant for repair, backup and installation — Prototype</p>
         </header>
 
         <!-- Greeting -->
-        <div class="greeting" id="greeting">Bonjour. Que voulez-vous faire ?</div>
+        <div class="greeting" id="greeting">Hello. What would you like to do?</div>
 
         <!-- Status bar -->
         <div class="status-bar">
             <div class="status-indicator">
                 <span class="status-dot"></span>
-                <span id="statusText">Système prêt</span>
+                <span id="statusText">System ready</span>
             </div>
-            <span id="hwSummary">Analyse en cours...</span>
-            <button class="btn-tech-toggle" id="techToggle" onclick="toggleTechPanel()" title="Voir ce que le système fait réellement, en direct">
-                🖥️ Détails techniques
+            <span id="hwSummary">Detecting...</span>
+            <button class="btn-tech-toggle" id="techToggle" onclick="toggleTechPanel()" title="See what the system is really doing, live">
+                🖥️ <span id="techToggleLabel">Technical details</span>
             </button>
         </div>
 
@@ -640,46 +689,46 @@
         <div class="cards-grid" id="cardsGrid">
             <div class="card" onclick="quickAction('repair')" data-action="repair">
                 <span class="card-icon">🛠️</span>
-                <div class="card-title">Réparer</div>
-                <div class="card-desc">Réparer le démarrage, le système ou les erreurs</div>
+                <div class="card-title" id="card-repair-title">Repair</div>
+                <div class="card-desc" id="card-repair-desc">Fix boot, system or error issues</div>
             </div>
 
             <div class="card" onclick="quickAction('install')" data-action="install">
                 <span class="card-icon">💿</span>
-                <div class="card-title">Installer</div>
-                <div class="card-desc">Installer Windows, Linux ou BSD</div>
+                <div class="card-title" id="card-install-title">Install</div>
+                <div class="card-desc" id="card-install-desc">Install Windows, Linux or BSD</div>
             </div>
 
             <div class="card" onclick="quickAction('backup')" data-action="backup">
                 <span class="card-icon">📁</span>
-                <div class="card-title">Sauvegarder</div>
-                <div class="card-desc">Sauvegarder vos fichiers et documents</div>
+                <div class="card-title" id="card-backup-title">Backup</div>
+                <div class="card-desc" id="card-backup-desc">Back up your files and documents</div>
             </div>
 
             <div class="card" onclick="quickAction('recover')" data-action="recover">
                 <span class="card-icon">🔍</span>
-                <div class="card-title">Récupérer</div>
-                <div class="card-desc">Récupérer des fichiers perdus ou supprimés</div>
+                <div class="card-title" id="card-recover-title">Recover</div>
+                <div class="card-desc" id="card-recover-desc">Recover lost or deleted files</div>
             </div>
 
             <div class="card" onclick="quickAction('diagnose')" data-action="diagnose">
                 <span class="card-icon">🩺</span>
-                <div class="card-title">Diagnostiquer</div>
-                <div class="card-desc">Analyser l'état complet du PC</div>
+                <div class="card-title" id="card-diagnose-title">Diagnose</div>
+                <div class="card-desc" id="card-diagnose-desc">Analyze the PC's full health</div>
             </div>
 
             <div class="card" onclick="quickAction('restore')" data-action="restore">
                 <span class="card-icon">🔄</span>
-                <div class="card-title">Restaurer</div>
-                <div class="card-desc">Restaurer une sauvegarde précédente</div>
+                <div class="card-title" id="card-restore-title">Restore</div>
+                <div class="card-desc" id="card-restore-desc">Restore a previous backup</div>
             </div>
         </div>
 
         <!-- Chat box -->
         <div class="interaction-area">
             <div class="chat-box active" id="chatBox">
-                <div class="chat-message ai">
-                    Bonjour ! Je suis l'assistant AI Rescue. Dites-moi ce dont vous avez besoin ou cliquez sur une carte ci-dessus.
+                <div class="chat-message ai" id="initialChatMessage">
+                    Hello! I'm the AI Rescue assistant. Tell me what you need or click a card above.
                 </div>
             </div>
 
@@ -690,16 +739,16 @@
                         type="text"
                         class="text-input"
                         id="userInput"
-                        placeholder="Décrivez votre problème... (ex: Mon PC ne démarre plus)"
+                        placeholder="Describe your problem... (e.g. My PC won't boot)"
                         onkeypress="handleKeyPress(event)"
                         autofocus
                     />
                 </div>
-                <button class="btn btn-voice" id="voiceBtn" onclick="toggleVoice()" title="Parler à l'IA">
+                <button class="btn btn-voice" id="voiceBtn" onclick="toggleVoice()" title="Talk to the AI">
                     🎤
                 </button>
-                <button class="btn btn-send" onclick="sendMessage()">
-                    Envoyer →
+                <button class="btn btn-send" id="sendBtn" onclick="sendMessage()">
+                    Send →
                 </button>
             </div>
         </div>
@@ -735,12 +784,90 @@
         let lastLogId = 0;
 
         // ============================================
+        // Language — English by default, the user picks their language
+        // via the switch in the header. Choice persists across visits.
+        // ============================================
+        const I18N = {
+            en: {
+                subtitle: "AI assistant for repair, backup and installation — Prototype",
+                greetingMorning: "Hello", greetingEvening: "Good evening",
+                greetingQuestion: "What would you like to do?",
+                statusReady: "System ready", statusConnecting: "Connecting to system...",
+                hwDetecting: "Detecting...",
+                techToggle: "Technical details",
+                cards: {
+                    repair: ["Repair", "Fix boot, system or error issues"],
+                    install: ["Install", "Install Windows, Linux or BSD"],
+                    backup: ["Backup", "Back up your files and documents"],
+                    recover: ["Recover", "Recover lost or deleted files"],
+                    diagnose: ["Diagnose", "Analyze the PC's full health"],
+                    restore: ["Restore", "Restore a previous backup"],
+                },
+                initialChatMessage: "Hello! I'm the AI Rescue assistant. Tell me what you need or click a card above.",
+                placeholder: "Describe your problem... (e.g. My PC won't boot)",
+                voiceTitle: "Talk to the AI", sendBtn: "Send →",
+                notUnderstood: "I didn't understand. Could you rephrase?",
+                micUnavailable: "Microphone unavailable. Please use the keyboard.",
+                listening: "🎤 Listening... Speak now.",
+                voiceReceived: "🎤 Voice message received",
+            },
+            fr: {
+                subtitle: "Assistant IA pour réparation, sauvegarde et installation — Prototype",
+                greetingMorning: "Bonjour", greetingEvening: "Bonsoir",
+                greetingQuestion: "Que voulez-vous faire ?",
+                statusReady: "Système prêt", statusConnecting: "Connexion au système...",
+                hwDetecting: "Détection en cours...",
+                techToggle: "Détails techniques",
+                cards: {
+                    repair: ["Réparer", "Réparer le démarrage, le système ou les erreurs"],
+                    install: ["Installer", "Installer Windows, Linux ou BSD"],
+                    backup: ["Sauvegarder", "Sauvegarder vos fichiers et documents"],
+                    recover: ["Récupérer", "Récupérer des fichiers perdus ou supprimés"],
+                    diagnose: ["Diagnostiquer", "Analyser l'état complet du PC"],
+                    restore: ["Restaurer", "Restaurer une sauvegarde précédente"],
+                },
+                initialChatMessage: "Bonjour ! Je suis l'assistant AI Rescue. Dites-moi ce dont vous avez besoin ou cliquez sur une carte ci-dessus.",
+                placeholder: "Décrivez votre problème... (ex: Mon PC ne démarre plus)",
+                voiceTitle: "Parler à l'IA", sendBtn: "Envoyer →",
+                notUnderstood: "Je n'ai pas compris. Pouvez-vous reformuler ?",
+                micUnavailable: "Microphone non disponible. Utilisez le clavier.",
+                listening: "🎤 Écoute en cours... Parlez maintenant.",
+                voiceReceived: "🎤 Message vocal reçu",
+            },
+        };
+
+        let currentLang = localStorage.getItem('ai-rescue-lang') || 'en';
+
+        function setLanguage(lang) {
+            currentLang = (lang === 'fr') ? 'fr' : 'en';
+            localStorage.setItem('ai-rescue-lang', currentLang);
+            document.getElementById('langBtnEn').classList.toggle('active', currentLang === 'en');
+            document.getElementById('langBtnFr').classList.toggle('active', currentLang === 'fr');
+            applyLanguage();
+        }
+
+        function applyLanguage() {
+            const t = I18N[currentLang];
+            document.getElementById('subtitle').textContent = t.subtitle;
+            document.getElementById('techToggleLabel').textContent = t.techToggle;
+            document.getElementById('userInput').placeholder = t.placeholder;
+            document.getElementById('voiceBtn').title = t.voiceTitle;
+            document.getElementById('sendBtn').textContent = t.sendBtn;
+            document.getElementById('initialChatMessage').textContent = t.initialChatMessage;
+            for (const [action, [title, desc]] of Object.entries(t.cards)) {
+                document.getElementById(`card-${action}-title`).textContent = title;
+                document.getElementById(`card-${action}-desc`).textContent = desc;
+            }
+            updateGreeting();
+        }
+
+        // ============================================
         // Initialization
         // ============================================
         async function init() {
             createParticles();
+            setLanguage(currentLang);
             await checkStatus();
-            updateGreeting();
             pollLogs();
             setInterval(pollLogs, 1500);
         }
@@ -760,36 +887,31 @@
 
         function updateGreeting() {
             const hour = new Date().getHours();
-            const greetings = {
-                morning: 'Bonjour',
-                afternoon: 'Bonjour',
-                evening: 'Bonsoir',
-            };
-            let greeting = hour < 12 ? greetings.morning :
-                           hour < 18 ? greetings.afternoon :
-                                       greetings.evening;
+            const t = I18N[currentLang];
+            const greeting = hour < 18 ? t.greetingMorning : t.greetingEvening;
             document.getElementById('greeting').textContent =
-                `${greeting}. Que voulez-vous faire ?`;
+                `${greeting}. ${t.greetingQuestion}`;
         }
 
         // ============================================
         // Status check
         // ============================================
         async function checkStatus() {
+            const t = I18N[currentLang];
             try {
                 const response = await fetch(`${API_BASE}/status`);
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('statusText').textContent = 'Système prêt';
+                    document.getElementById('statusText').textContent = t.statusReady;
                     document.getElementById('hwSummary').textContent =
-                        `CPU: ${data.cpu || '?'} | RAM: ${data.ram || '?'} | Disques: ${data.disks || '?'}`;
+                        `CPU: ${data.cpu || '?'} | RAM: ${data.ram || '?'} | Disks: ${data.disks || '?'}`;
                     document.querySelector('.status-dot').style.background = 'var(--success)';
                 } else {
                     throw new Error('API not available');
                 }
             } catch (e) {
-                document.getElementById('statusText').textContent = 'Connexion au système...';
-                document.getElementById('hwSummary').textContent = 'Détection en cours...';
+                document.getElementById('statusText').textContent = t.statusConnecting;
+                document.getElementById('hwSummary').textContent = t.hwDetecting;
                 document.querySelector('.status-dot').style.background = 'var(--warning)';
             }
         }
@@ -839,14 +961,25 @@
             if (card) card.style.transform = 'scale(0.95)';
             setTimeout(() => { if (card) card.style.transform = ''; }, 150);
 
-            const messages = {
-                repair: 'Répare mon ordinateur',
-                install: 'Je veux installer un système',
-                backup: 'Fais une sauvegarde de mes fichiers',
-                recover: 'Récupère mes fichiers perdus',
-                diagnose: 'Fais un diagnostic complet de mon PC',
-                restore: 'Restaure ma dernière sauvegarde',
+            const messagesByLang = {
+                en: {
+                    repair: 'Repair my computer',
+                    install: 'I want to install a system',
+                    backup: 'Back up my files',
+                    recover: 'Recover my lost files',
+                    diagnose: 'Run a full diagnostic on my PC',
+                    restore: 'Restore my last backup',
+                },
+                fr: {
+                    repair: 'Répare mon ordinateur',
+                    install: 'Je veux installer un système',
+                    backup: 'Fais une sauvegarde de mes fichiers',
+                    recover: 'Récupère mes fichiers perdus',
+                    diagnose: 'Fais un diagnostic complet de mon PC',
+                    restore: 'Restaure ma dernière sauvegarde',
+                },
             };
+            const messages = messagesByLang[currentLang];
 
             addMessage(messages[action] || action, 'user');
             await processRequest(action, messages[action] || action);
@@ -866,37 +999,34 @@
 
         // Envoi message au système conversationnel
         async function sendToAI(userMessage) {
-            // Afficher "Je réfléchis..."
+            const t = I18N[currentLang];
             addMessage('...', 'ai');
-            setStatus('thinking', 'L\'IA réfléchit...');
+            setStatus('thinking', currentLang === 'fr' ? 'L\'IA réfléchit...' : 'Thinking...');
             const thinkingMsg = document.querySelector('.chat-message.ai:last-child');
 
             try {
                 const response = await fetch(`${API_BASE}/chat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: userMessage }),
+                    body: JSON.stringify({ message: userMessage, lang: currentLang }),
                 });
 
                 const data = await response.json();
-                const aiResponse = data.response || 'Je n\'ai pas compris. Pouvez-vous reformuler ?';
+                const aiResponse = data.response || t.notUnderstood;
 
-                // Remplacer le "..."
                 if (thinkingMsg) {
-                    thinkingMsg.textContent = aiResponse;
-                    // Conversion markdown basique
                     thinkingMsg.innerHTML = formatMarkdown(aiResponse);
                 }
 
-                setStatus('ready', 'Système prêt');
+                setStatus('ready', t.statusReady);
 
             } catch (e) {
                 // Mode demo si l'API n'est pas joignable
                 if (thinkingMsg) {
-                    const demo = getDemoResponse(userMessage);
+                    const demo = getDemoResponse(userMessage, currentLang);
                     thinkingMsg.innerHTML = formatMarkdown(demo);
                 }
-                setStatus('ready', 'Mode démo');
+                setStatus('ready', currentLang === 'fr' ? 'Mode démo' : 'Demo mode');
             }
         }
 
@@ -906,53 +1036,80 @@
         }
 
         // Réponses démo quand le backend n'est pas connecté
-        function getDemoResponse(userMessage) {
+        function getDemoResponse(userMessage, lang) {
             const t = userMessage.toLowerCase();
+            const fr = lang === 'fr';
 
-            // Flow installation
-            if (/installe|windows|linux|ubuntu|debian/.test(t)) {
-                if (/11/.test(t)) return "**Bien, je vais installer Windows 11.**\n\nVotre PC est compatible !\n- RAM : 8GB ✓\n- Disque : 500GB ✓\n- TPM : ✓\n\n⚠️ **Attention** : cette opération va effacer le disque.\n\nVoulez-vous continuer ? Répondez **OUI** ou **NON**.";
-                if (/10/.test(t)) return "**D'accord, Windows 10.**\n\nVotre PC est compatible. Voulez-vous que je commence ?";
-                if (/ubuntu/.test(t)) return "**Ubuntu 24.04 LTS — excellent choix.**\n\nJe vais le télécharger (5.7GB) et l'installer. D'accord ?";
-                if (/debian/.test(t)) return "**Debian 12 — parfait pour les vieux PC !**\n\nBesoin de 2GB RAM et 10GB disque. Compatible ✓\n\nJe commence ?";
-                // Première étape : demander quel OS
-                return "**Je peux installer plusieurs systèmes. Lequel préférez-vous ?**\n\n🪟 **Windows** : Windows 11, Windows 10\n🐧 **Linux** : Ubuntu, Debian, Fedora, Arch, Mint\n👹 **BSD** : FreeBSD, OpenBSD\n\nDites-moi simplement lequel vous voulez.";
+            // Flow installation — nécessite un verbe d'install explicite : un simple
+            // "windows"/"linux" mentionné en décrivant un symptôme (ex: "mon Windows
+            // plante") ne doit pas aiguiller vers "quel OS veux-tu installer ?".
+            if (/install|réinstalle|reinstall/.test(t)) {
+                if (/11/.test(t)) return fr
+                    ? "**Bien, je vais installer Windows 11.**\n\nVotre PC est compatible !\n- RAM : 8GB ✓\n- Disque : 500GB ✓\n- TPM : ✓\n\n⚠️ **Attention** : cette opération va effacer le disque.\n\nVoulez-vous continuer ? Répondez **OUI** ou **NON**."
+                    : "**Alright, I'll install Windows 11.**\n\nYour PC is compatible!\n- RAM: 8GB ✓\n- Disk: 500GB ✓\n- TPM: ✓\n\n⚠️ **Warning**: this will erase the disk.\n\nContinue? Reply **YES** or **NO**.";
+                if (/10/.test(t)) return fr
+                    ? "**D'accord, Windows 10.**\n\nVotre PC est compatible. Voulez-vous que je commence ?"
+                    : "**Alright, Windows 10.**\n\nYour PC is compatible. Should I start?";
+                if (/ubuntu/.test(t)) return fr
+                    ? "**Ubuntu 24.04 LTS — excellent choix.**\n\nJe vais le télécharger (5.7GB) et l'installer. D'accord ?"
+                    : "**Ubuntu 24.04 LTS — great choice.**\n\nI'll download it (5.7GB) and install it. Sound good?";
+                if (/debian/.test(t)) return fr
+                    ? "**Debian 12 — parfait pour les vieux PC !**\n\nBesoin de 2GB RAM et 10GB disque. Compatible ✓\n\nJe commence ?"
+                    : "**Debian 12 — great for older PCs!**\n\nNeeds 2GB RAM and 10GB disk. Compatible ✓\n\nShall I start?";
+                return fr
+                    ? "**Je peux installer plusieurs systèmes. Lequel préférez-vous ?**\n\n🪟 **Windows** : Windows 11, Windows 10\n🐧 **Linux** : Ubuntu, Debian, Fedora, Arch, Mint\n👹 **BSD** : FreeBSD, OpenBSD\n\nDites-moi simplement lequel vous voulez."
+                    : "**I can install several systems. Which do you prefer?**\n\n🪟 **Windows**: Windows 11, Windows 10\n🐧 **Linux**: Ubuntu, Debian, Fedora, Arch, Mint\n👹 **BSD**: FreeBSD, OpenBSD\n\nJust tell me which one you want.";
             }
 
             // Flow réparation
-            if (/répare|fix|marche plus|démarre pas|écran noir|bleu|blue/.test(t)) {
-                return "**Je vais examiner votre ordinateur.**\n\nDétecté : Windows 10 sur /dev/sda1\nStatut du boot : ⚠️ endommagé\n\nJe peux réparer automatiquement :\n1. 🟢 Reconstruction BCD\n2. 🟡 Réparation EFI (nécessite redémarrage)\n3. 🟢 Vérification du disque\n\nVoulez-vous que je continue ?";
+            if (/repair|fix|won.?t (boot|start)|black screen|blue screen|bsod|répare|marche plus|démarre pas|écran noir|écran bleu/.test(t)) {
+                return fr
+                    ? "**Je vais examiner votre ordinateur.**\n\nDétecté : Windows 10 sur /dev/sda1\nStatut du boot : ⚠️ endommagé\n\nJe peux réparer automatiquement :\n1. 🟢 Reconstruction BCD\n2. 🟡 Réparation EFI (nécessite redémarrage)\n3. 🟢 Vérification du disque\n\nVoulez-vous que je continue ?"
+                    : "**I'll examine your computer.**\n\nDetected: Windows 10 on /dev/sda1\nBoot status: ⚠️ damaged\n\nI can automatically repair:\n1. 🟢 BCD rebuild\n2. 🟡 EFI repair (needs a reboot)\n3. 🟢 Disk check\n\nShould I continue?";
             }
 
             // Flow sauvegarde
-            if (/sauvegarde|backup|sauver|copie/.test(t)) {
-                return "**Je vais sauvegarder vos fichiers.**\n\nBranchez le disque externe où vous voulez sauvegarder.\n\nEnsuite dites-moi quand c'est prêt !";
+            if (/backup|sauvegarde|sauver|copie/.test(t)) {
+                return fr
+                    ? "**Je vais sauvegarder vos fichiers.**\n\nBranchez le disque externe où vous voulez sauvegarder.\n\nEnsuite dites-moi quand c'est prêt !"
+                    : "**I'll back up your files.**\n\nPlug in the external drive you want to back up to.\n\nThen let me know when it's ready!";
             }
 
             // Flow récupération
-            if (/récupère|recover|perdu|effacé|supprim/.test(t)) {
-                return "**Je peux récupérer vos fichiers.**\n\nQuel type de fichiers avez-vous perdu ?\n- Photos (jpg, png, raw...)\n- Documents (pdf, docx...)\n- Vidéos (mp4, avi...)\n- Tout\n\nDites-moi et je vais scanner le disque.";
+            if (/recover|lost|deleted|récupère|perdu|effacé|supprim/.test(t)) {
+                return fr
+                    ? "**Je peux récupérer vos fichiers.**\n\nQuel type de fichiers avez-vous perdu ?\n- Photos (jpg, png, raw...)\n- Documents (pdf, docx...)\n- Vidéos (mp4, avi...)\n- Tout\n\nDites-moi et je vais scanner le disque."
+                    : "**I can recover your files.**\n\nWhat type of files did you lose?\n- Photos (jpg, png, raw...)\n- Documents (pdf, docx...)\n- Videos (mp4, avi...)\n- Everything\n\nTell me and I'll scan the disk.";
             }
 
             // Confirmation oui/non
-            if (/^oui$|^yes$|^ok$|^confirme|go/i.test(t)) {
-                return "**Parfait, je commence !**\n\n📥 Téléchargement...\n\n*(En mode démo, le vrai traitement se fera sur la clé USB bootable)*";
+            if (/^yes$|^ok$|^confirm|^go$|^oui$|^confirme/i.test(t)) {
+                return fr
+                    ? "**Parfait, je commence !**\n\n📥 Téléchargement...\n\n*(En mode démo, le vrai traitement se fera sur la clé USB bootable)*"
+                    : "**Great, starting now!**\n\n📥 Downloading...\n\n*(In demo mode — the real processing happens on the bootable USB.)*";
             }
-            if (/^non$|^no$|^annule/.test(t)) {
-                return "**Opération annulée.**\n\nQue voulez-vous faire d'autre ?";
+            if (/^no$|^cancel$|^non$|^annule/i.test(t)) {
+                return fr ? "**Opération annulée.**\n\nQue voulez-vous faire d'autre ?"
+                          : "**Operation cancelled.**\n\nWhat else would you like to do?";
             }
 
             // Diagnostic
-            if (/diagnostique|diagnostic|problème|lent|pourquoi/.test(t)) {
-                return "**Diagnostic en cours...**\n\n✅ CPU : Intel Core i5 (OK)\n✅ RAM : 8GB (OK)\n⚠️ Disque : Samsung 500GB — santé 85%\n✅ Réseau : WiFi 5 connecté\n✅ Boot : OK\n\n**Recommandation** : votre disque perd de la santé. Envisagez une sauvegarde préventive et de le remplacer dans les 6-12 mois.";
+            if (/diagnos|why is|slow|problem|pourquoi|lent|problème/.test(t)) {
+                return fr
+                    ? "**Diagnostic en cours...**\n\n✅ CPU : Intel Core i5 (OK)\n✅ RAM : 8GB (OK)\n⚠️ Disque : Samsung 500GB — santé 85%\n✅ Réseau : WiFi 5 connecté\n✅ Boot : OK\n\n**Recommandation** : votre disque perd de la santé. Envisagez une sauvegarde préventive et de le remplacer dans les 6-12 mois."
+                    : "**Diagnosis in progress...**\n\n✅ CPU: Intel Core i5 (OK)\n✅ RAM: 8GB (OK)\n⚠️ Disk: Samsung 500GB — 85% health\n✅ Network: WiFi 5 connected\n✅ Boot: OK\n\n**Recommendation**: your disk is losing health. Consider a preventive backup and replacing it within 6-12 months.";
             }
 
             // Aide
-            if (/aide|help|quoi|comment/.test(t)) {
-                return "**Que puis-je faire ?**\n\n📦 \"Installe Windows 11\" → installation auto\n🔧 \"Mon PC ne démarre plus\" → réparation\n💾 \"Sauvegarde mes fichiers\" → backup\n🔍 \"J'ai perdu mes photos\" → récupération\n🩺 \"Pourquoi c'est lent ?\" → diagnostic\n\nVous pouvez **me parler** 🎤 ou **écrire** votre demande !";
+            if (/help|what|how|aide|quoi|comment/.test(t)) {
+                return fr
+                    ? "**Que puis-je faire ?**\n\n📦 \"Installe Windows 11\" → installation auto\n🔧 \"Mon PC ne démarre plus\" → réparation\n💾 \"Sauvegarde mes fichiers\" → backup\n🔍 \"J'ai perdu mes photos\" → récupération\n🩺 \"Pourquoi c'est lent ?\" → diagnostic\n\nVous pouvez **me parler** 🎤 ou **écrire** votre demande !"
+                    : "**What can I do?**\n\n📦 \"Install Windows 11\" → auto install\n🔧 \"My PC won't boot\" → repair\n💾 \"Back up my files\" → backup\n🔍 \"I lost my photos\" → recovery\n🩺 \"Why is it slow?\" → diagnosis\n\nYou can **talk to me** 🎤 or **type** your request!";
             }
 
-            return "**Je n'ai pas bien compris.**\n\nDites-moi simplement ce que vous voulez faire :\n- Réparer\n- Installer\n- Sauvegarder\n- Récupérer des fichiers\n\nOu cliquez sur une des cartes ci-dessus ! 👆";
+            return fr
+                ? "**Je n'ai pas bien compris.**\n\nDites-moi simplement ce que vous voulez faire :\n- Réparer\n- Installer\n- Sauvegarder\n- Récupérer des fichiers\n\nOu cliquez sur une des cartes ci-dessus ! 👆"
+                : "**I didn't quite understand.**\n\nJust tell me what you want to do:\n- Repair\n- Install\n- Backup\n- Recover files\n\nOr click one of the cards above! 👆";
         }
 
         // Formatage markdown basique
@@ -1112,7 +1269,7 @@
                 mediaRecorder.onstop = async () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     // In production: send to speech-to-text API
-                    addMessage('🎤 Message vocal reçu', 'system');
+                    addMessage(I18N[currentLang].voiceReceived, 'system');
                     isRecording = false;
                     btn.classList.remove('recording');
                     btn.textContent = '🎤';
@@ -1122,10 +1279,10 @@
                 isRecording = true;
                 btn.classList.add('recording');
                 btn.textContent = '⏺️';
-                addMessage('🎤 Écoute en cours... Parlez maintenant.', 'system');
+                addMessage(I18N[currentLang].listening, 'system');
 
             } catch (e) {
-                addMessage('Microphone non disponible. Utilisez le clavier.', 'system');
+                addMessage(I18N[currentLang].micUnavailable, 'system');
             }
         }
 

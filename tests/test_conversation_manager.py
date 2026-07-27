@@ -37,3 +37,20 @@ def test_known_intent_starts_the_matching_flow():
     # and accent-sensitive, so this exercises the real matching path.
     asyncio.run(cm.process_user_input("mon pc ne démarre plus"))
     assert cm.context.current_flow == "repair"
+
+
+def test_mentioning_an_os_name_does_not_trigger_install():
+    """A message describing symptoms ("my Windows 10 keeps crashing") must not
+    be routed to the install flow just because it names an OS — that flow
+    ends in erasing the target disk. Only an explicit install verb should."""
+    cm = ConversationManager(llm=None)
+    asyncio.run(cm.process_user_input(
+        "My Windows 10 PC keeps randomly restarting, sometimes with a blue screen."
+    ))
+    assert cm.context.current_flow != "install"
+
+
+def test_explicit_install_request_still_triggers_install():
+    cm = ConversationManager(llm=None)
+    asyncio.run(cm.process_user_input("please install Ubuntu on this PC"))
+    assert cm.context.current_flow == "install"

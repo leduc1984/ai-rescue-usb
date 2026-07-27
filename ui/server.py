@@ -349,13 +349,14 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
         try:
             body = self._read_body()
             message = body.get("message", "")
+            lang = body.get("lang", "en")
 
             log.info(f"Processing chat message: {message[:100]}")
 
             if not self._conversation:
                 self._json_response({
                     "status": "error",
-                    "response": "Système conversationnel non disponible.",
+                    "response": "Conversation system unavailable.",
                 })
                 return
 
@@ -363,7 +364,7 @@ class RescueAPIHandler(SimpleHTTPRequestHandler):
             loop = asyncio.new_event_loop()
             try:
                 response = loop.run_until_complete(
-                    self._conversation.process_user_input(message)
+                    self._conversation.process_user_input(message, lang=lang)
                 )
             finally:
                 loop.close()
